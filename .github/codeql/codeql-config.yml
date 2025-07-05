@@ -1,0 +1,29 @@
+# CodeQL Configuration for VS Code Extension
+
+# Specify additional queries to run
+queries:
+  - uses: security-and-quality
+  - uses: security-extended
+
+# Configure paths to analyze
+paths:
+  - src/
+  - out/
+
+# Configure paths to ignore
+paths-ignore:
+  - node_modules/
+  - .vscode-test/
+  - "**/*.test.ts"
+  - "**/*.test.js"
+
+# Specify the build mode for compiled languages
+# For TypeScript/JavaScript, we use 'none' since it's interpreted
+build-mode: none
+
+# Configure additional analysis options
+queries-filters:
+  - exclude:
+      id: js/unused-local-variable
+  - exclude:
+      id: js/unreachable-statement
