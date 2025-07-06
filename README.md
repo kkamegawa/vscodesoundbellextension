@@ -1,6 +1,18 @@
 # VS Code Extension: Copilot Sound Notifier
 
 A VS Code extension that plays sounds when GitHub Copilot agent completes tasks.
+It extension is written in GitHub Copilot Agent Mode(over 99%).
+
+This extension enhances your coding experience by providing auditory feedback when Copilot completes its tasks, helping you stay focused and informed without needing to constantly check the editor.
+
+## known issues
+
+- The extension may not work correctly if the Copilot agent is not properly configured or enabled in your VS Code settings.
+- Some sound formats may not be supported on all platforms, ensure you have the required audio libraries installed.
+
+## contributions
+
+Contributions are welcome! Please read the [Contributing Guide](CONTRIBUTING.md) for details on how to contribute to this project.
 
 ## Features
 
