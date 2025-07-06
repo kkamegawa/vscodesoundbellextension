@@ -1,12 +1,12 @@
 {
-  "name": "copilot-sound-notifier",
-  "displayName": "Copilot Sound Notifier",
+  "name": "sound-notifier-for-copilot-agent-task",
+  "displayName": "Sound Notifier for GitHub Copilot Agent task",
   "description": "Play sounds when GitHub Copilot agent completes tasks",
   "version": "0.0.1",
-  "publisher": "your-publisher-name",
+  "publisher": "kkamegawa",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/copilot-sound-notifier"
+    "url": "https://github.com/kkamegawa/vscodesoundbellextension"
   },
   "engines": {
     "vscode": "^1.74.0"
@@ -24,29 +24,35 @@
   "activationEvents": [
     "onStartupFinished"
   ],
-  "main": "./out/extension.js",
+  "main": "./out/src/extension.js",
+  "icon": "icon.png",
   "contributes": {
     "commands": [
       {
-        "command": "copilotSoundNotifier.playSound",
+        "command": "soundNotifier.playSound",
         "title": "Play Completion Sound",
-        "category": "Copilot Sound Notifier"
+        "category": "Sound Notifier for Agent task"
       },
       {
-        "command": "copilotSoundNotifier.testSound",
+        "command": "soundNotifier.testSound",
         "title": "Test Sound",
-        "category": "Copilot Sound Notifier"
+        "category": "Sound Notifier for Agent task"
+      },
+      {
+        "command": "soundNotifier.toggleVSCodeNotification",
+        "title": "Toggle VS Code Notification Mode",
+        "category": "Sound Notifier for Agent task"
       }
     ],
     "configuration": {
-      "title": "Copilot Sound Notifier",
+      "title": "Sound Notifier for Agent task",
       "properties": {
-        "copilotSoundNotifier.enabled": {
+        "soundNotifier.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable sound notifications when Copilot agent completes tasks"
+          "description": "Enable sound notifications when Agent task completes"
         },
-        "copilotSoundNotifier.soundFiles": {
+        "soundNotifier.soundFiles": {
           "type": "object",
           "default": {
             "win32": "",
@@ -60,7 +66,7 @@
               "description": "Sound file path for Windows"
             },
             "darwin": {
-              "type": "string", 
+              "type": "string",
               "description": "Sound file path for macOS"
             },
             "linux": {
@@ -69,7 +75,7 @@
             }
           }
         },
-        "copilotSoundNotifier.soundCommands": {
+        "soundNotifier.soundCommands": {
           "type": "object",
           "default": {
             "win32": "",
@@ -92,17 +98,50 @@
             }
           }
         },
-        "copilotSoundNotifier.volume": {
+        "soundNotifier.useVSCodeNotification": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use VS Code built-in notification system instead of external sound commands"
+        },
+        "soundNotifier.useDefaultSystemSound": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use default system sound when no custom sound file is specified"
+        },
+        "soundNotifier.defaultSoundCommands": {
+          "type": "object",
+          "default": {
+            "win32": "powershell -c \"[System.Media.SystemSounds]::Exclamation.Play()\"",
+            "darwin": "afplay /System/Library/Sounds/Glass.aiff",
+            "linux": "paplay /usr/share/sounds/alsa/Front_Left.wav"
+          },
+          "description": "Default system sound commands for each platform",
+          "properties": {
+            "win32": {
+              "type": "string",
+              "description": "Default sound command for Windows"
+            },
+            "darwin": {
+              "type": "string",
+              "description": "Default sound command for macOS"
+            },
+            "linux": {
+              "type": "string",
+              "description": "Default sound command for Linux"
+            }
+          }
+        },
+        "soundNotifier.volume": {
           "type": "number",
           "default": 0.5,
           "minimum": 0,
           "maximum": 1,
           "description": "Sound volume (0.0 to 1.0)"
         },
-        "copilotSoundNotifier.showNotification": {
+        "soundNotifier.showNotification": {
           "type": "boolean",
           "default": false,
-          "description": "Show notification message when Copilot task completes"
+          "description": "Show notification message when Agent task completes"
         }
       }
     }
@@ -117,16 +156,18 @@
     "package": "vsce package"
   },
   "devDependencies": {
-    "@types/vscode": "^1.74.0",
+    "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^2.15.0",
+    "esbuild": "^0.25.5",
     "eslint": "^8.28.0",
     "glob": "^8.0.3",
     "mocha": "^10.1.0",
-    "@types/mocha": "^10.0.1",
-    "typescript": "^4.9.4",
-    "@vscode/test-electron": "^2.2.0",
-    "@vscode/vsce": "^2.15.0"
+    "typescript": "^4.9.4"
   }
 }

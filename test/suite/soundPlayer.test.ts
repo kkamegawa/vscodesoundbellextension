@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { SoundPlayer } from '../../out/soundPlayer';
+import { SoundPlayer } from '../../src/soundPlayer';
 
 suite('SoundPlayer Test Suite', () => {
     vscode.window.showInformationMessage('Start all SoundPlayer tests.');

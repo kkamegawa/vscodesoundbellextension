@@ -184,7 +184,7 @@ export class CopilotMonitor {
         this.soundPlayer.playCompletionSound();
         
         // Optional: Show notification
-        const config = vscode.workspace.getConfiguration('copilotSoundNotifier');
+        const config = vscode.workspace.getConfiguration('soundNotifier');
         if (config.get<boolean>('showNotification', false)) {
             vscode.window.showInformationMessage('Copilot task completed!');
         }
