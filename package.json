@@ -4,6 +4,11 @@
   "description": "Play sounds when GitHub Copilot agent completes tasks",
   "version": "0.0.1",
   "publisher": "kkamegawa",
+  "license": "MIT",
+  "homepage": "https://github.com/kkamegawa/vscodesoundbellextension",
+  "bugs": {
+    "url": "https://github.com/kkamegawa/vscodesoundbellextension/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/kkamegawa/vscodesoundbellextension"
@@ -19,8 +24,14 @@
     "sound",
     "notification",
     "agent",
-    "completion"
+    "completion",
+    "accessibility",
+    "productivity"
   ],
+  "galleryBanner": {
+    "color": "#0078d4",
+    "theme": "dark"
+  },
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -154,7 +165,9 @@
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
     "test:unit": "mocha out/test/suite/*.test.js",
-    "package": "vsce package"
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "publish:ovsx": "ovsx publish"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
@@ -165,6 +178,7 @@
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.8",
     "@vscode/vsce": "^2.22.0",
+    "ovsx": "^0.8.3",
     "eslint": "^8.56.0",
     "glob": "^10.3.10",
     "mocha": "^10.2.0",
