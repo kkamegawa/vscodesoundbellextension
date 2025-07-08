@@ -178,9 +178,9 @@
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.8",
     "@vscode/vsce": "^2.22.0",
-    "ovsx": "^0.8.3",
+    "ovsx": "^0.10.4",
     "eslint": "^8.56.0",
-    "glob": "^10.3.10",
+    "glob": "^11.0.3",
     "mocha": "^10.2.0",
     "typescript": "5.3.3"
   }
