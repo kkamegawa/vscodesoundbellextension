@@ -13,7 +13,7 @@ export async function run(): Promise<void> {
     const testsRoot = path.resolve(__dirname, '..');
 
     try {
-        // globSyncで同期的にファイルリストを取得
+        // Get the file list synchronously using globSync
     const files: string[] = globSync('**/*.test.js', { cwd: testsRoot });
 
         console.log(`Found ${files.length} test files`);
