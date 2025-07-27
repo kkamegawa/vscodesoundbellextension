@@ -4,12 +4,17 @@
   "description": "Play sounds when GitHub Copilot agent completes tasks",
   "version": "0.0.1",
   "publisher": "kkamegawa",
+  "license": "MIT",
+  "homepage": "https://github.com/kkamegawa/vscodesoundbellextension",
+  "bugs": {
+    "url": "https://github.com/kkamegawa/vscodesoundbellextension/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/kkamegawa/vscodesoundbellextension"
   },
   "engines": {
-    "vscode": "^1.74.0"
+    "vscode": "^1.85.0"
   },
   "categories": [
     "Other"
@@ -19,8 +24,14 @@
     "sound",
     "notification",
     "agent",
-    "completion"
+    "completion",
+    "accessibility",
+    "productivity"
   ],
+  "galleryBanner": {
+    "color": "#0078d4",
+    "theme": "dark"
+  },
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -150,10 +161,13 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
+    "pretest": "npm run compile",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "package": "vsce package"
+    "test:unit": "mocha out/test/suite/*.test.js",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "publish:ovsx": "ovsx publish"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.1",
@@ -163,7 +177,7 @@
     "@typescript-eslint/parser": "^5.45.0",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.6.0",
+    "@vscode/vsce": "^2.15.0",
     "esbuild": "^0.25.5",
     "eslint": "^8.28.0",
     "glob": "^8.0.3",

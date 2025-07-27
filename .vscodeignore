@@ -1,0 +1,45 @@
+# VS Code ignore patterns for packaging
+
+# Source files
+src/**/*.ts
+test/**
+.vscode-test/**
+
+# Build/tooling files
+node_modules/**
+.github/**
+.git/**
+.gitignore
+tsconfig.json
+.eslintrc.json
+webpack.config.js
+.vscode/**
+
+# Development files
+*.map
+*.ts
+!out/**/*.js
+
+# Documentation (keep only essential)
+RELEASE.md
+SECURITY.md
+
+# Test and development files
+test-sound.js
+*.log
+*.pid
+*.seed
+*.coverage
+.nyc_output
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Include essential files
+!README.md
+!CHANGELOG.md
+!LICENSE
+!icon.png
+!package.json
+!out/**
