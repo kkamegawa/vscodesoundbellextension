@@ -9,7 +9,7 @@ on:
     types: [published]
 
 env:
-  NODE_VERSION: '18.x'
+  NODE_VERSION: '20.x'
 
 jobs:
   test:
@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [18.x, 20.x]
+  node-version: [20.x]
 
     steps:
     - name: Checkout code

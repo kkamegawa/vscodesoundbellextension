@@ -17,7 +17,7 @@ on:
         - prerelease
 
 env:
-  NODE_VERSION: '18.x'
+  NODE_VERSION: '20.x'
 
 jobs:
   publish:
