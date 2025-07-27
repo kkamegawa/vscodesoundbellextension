@@ -1,9 +1,9 @@
 import * as path from 'path';
-import { glob } from 'glob';
 
-export function run(): Promise<void> {
+export async function run(): Promise<void> {
     // Create the mocha test
     const Mocha = require('mocha');
+    const globSync = require('glob').sync;
     const mocha = new Mocha({
         ui: 'tdd',
         color: true,
@@ -12,29 +12,33 @@ export function run(): Promise<void> {
 
     const testsRoot = path.resolve(__dirname, '..');
 
-    return new Promise((resolve, reject) => {
-        glob('**/**.test.js', { cwd: testsRoot })
-            .then(files => {
-                // Add files to the test suite
-                files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
+    try {
+        // Get the file list synchronously using globSync
+    const files: string[] = globSync('**/*.test.js', { cwd: testsRoot });
 
-                try {
-                    // Run the mocha test
-                    mocha.run((failures: number) => {
-                        if (failures > 0) {
-                            reject(new Error(`${failures} tests failed.`));
-                        } else {
-                            resolve();
-                        }
-                    });
-                } catch (err) {
-                    console.error(err);
-                    reject(err);
-                }
-            })
-            .catch(err => {
-                console.error('Failed to find test files:', err);
+        console.log(`Found ${files.length} test files`);
+
+        files.forEach(f => {
+            console.log(`Adding test file: ${f}`);
+            mocha.addFile(path.resolve(testsRoot, f));
+        });
+
+        return new Promise<void>((resolve, reject) => {
+            try {
+                mocha.run((failures: number) => {
+                    if (failures > 0) {
+                        reject(new Error(`${failures} tests failed.`));
+                    } else {
+                        resolve();
+                    }
+                });
+            } catch (err) {
+                console.error(err);
                 reject(err);
-            });
-    });
+            }
+        });
+    } catch (err) {
+        console.error('Failed to find test files:', err);
+        throw err;
+    }
 }
