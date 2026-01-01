@@ -5,7 +5,7 @@ export class CopilotMonitor {
     private disposables: vscode.Disposable[] = [];
     private isMonitoring: boolean = false;
     private lastSoundPlayTime: number = 0;
-    private readonly MIN_SOUND_INTERVAL_MS: number = 5000; // Minimum 5 seconds between sounds
+    private readonly minSoundIntervalMs: number = 5000; // Minimum 5 seconds between sounds
 
     constructor(soundPlayer: any) {
         this.soundPlayer = soundPlayer;
@@ -164,7 +164,7 @@ export class CopilotMonitor {
     private onCopilotTaskCompleted(): void {
         // Debounce: only play sound if enough time has passed since last play
         const now = Date.now();
-        if (now - this.lastSoundPlayTime < this.MIN_SOUND_INTERVAL_MS) {
+        if (now - this.lastSoundPlayTime < this.minSoundIntervalMs) {
             console.log('Copilot task completed detected but debounced (too soon)');
             return;
         }
