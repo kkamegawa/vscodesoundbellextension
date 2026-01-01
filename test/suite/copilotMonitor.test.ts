@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { CopilotMonitor } from '../../src/copilotMonitor';
+import { EXTENSION_ID } from './testConstants';
 
 suite('CopilotMonitor Test Suite', () => {
     let context: vscode.ExtensionContext;
@@ -9,7 +10,7 @@ suite('CopilotMonitor Test Suite', () => {
 
     suiteSetup(async () => {
         // Wait for extension to activate
-        const extension = vscode.extensions.getExtension('kkamegawa.sound-notifier-for-copilot-agent-task');
+        const extension = vscode.extensions.getExtension(EXTENSION_ID);
         if (extension && !extension.isActive) {
             await extension.activate();
         }
