@@ -2,4 +2,4 @@
  * Constants used across test suites
  */
 
-export const EXTENSION_ID = 'kkamegawa.sound-notifier-for-copilot-agent-task';
+export const EXTENSION_ID = 'kazushikamegawa.sound-notifier-for-copilot-agent-task';
