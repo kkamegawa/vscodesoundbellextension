@@ -2,7 +2,7 @@
   "name": "sound-notifier-for-copilot-agent-task",
   "displayName": "Sound Notifier for GitHub Copilot Agent task",
   "description": "Play sounds when GitHub Copilot agent completes tasks",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "KazushiKamegawa",
   "license": "MIT",
   "homepage": "https://github.com/kkamegawa/vscodesoundbellextension",
