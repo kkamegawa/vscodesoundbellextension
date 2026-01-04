@@ -1,11 +1,12 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { SoundPlayer } from '../../src/soundPlayer';
+import { EXTENSION_ID } from './testConstants';
 
 suite('Sound Notifier Extension Test Suite', () => {
     suiteSetup(async () => {
         // Wait for extension to activate
-        const extension = vscode.extensions.getExtension('kkamegawa.sound-notifier-for-copilot-agent-task');
+        const extension = vscode.extensions.getExtension(EXTENSION_ID);
         if (extension && !extension.isActive) {
             await extension.activate();
         }
@@ -14,7 +15,7 @@ suite('Sound Notifier Extension Test Suite', () => {
     });
 
     test('Should have extension activated', () => {
-        const extension = vscode.extensions.getExtension('kkamegawa.sound-notifier-for-copilot-agent-task');
+        const extension = vscode.extensions.getExtension(EXTENSION_ID);
         assert.ok(extension, 'Extension should be found');
         assert.ok(extension?.isActive, 'Extension should be active');
     });

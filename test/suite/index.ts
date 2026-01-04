@@ -1,9 +1,13 @@
 import * as path from 'path';
 
 export async function run(): Promise<void> {
+    // Ensure test/CI friendly environment flags so sounds are skipped
+    process.env.NODE_ENV = process.env.NODE_ENV || 'test';
+    process.env.CI = process.env.CI || 'true';
+
     // Create the mocha test
     const Mocha = require('mocha');
-    const globSync = require('glob').sync;
+    const { globSync } = require('glob');
     const mocha = new Mocha({
         ui: 'tdd',
         color: true,

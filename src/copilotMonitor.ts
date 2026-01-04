@@ -4,6 +4,8 @@ export class CopilotMonitor {
     private soundPlayer: any;
     private disposables: vscode.Disposable[] = [];
     private isMonitoring: boolean = false;
+    private lastSoundPlayTime: number = 0;
+    private readonly minSoundIntervalMs: number = 5000; // Minimum 5 seconds between sounds
 
     constructor(soundPlayer: any) {
         this.soundPlayer = soundPlayer;
@@ -74,21 +76,20 @@ export class CopilotMonitor {
      * Monitor output channels for Copilot activity
      */
     private monitorOutputChannels(): void {
-        // Check for GitHub Copilot output channel
-        const checkInterval = setInterval(() => {
-            if (!this.isMonitoring) {
-                clearInterval(checkInterval);
-                return;
+        // Monitor for document changes that might indicate Copilot activity
+        const textDocumentDisposable = vscode.workspace.onDidChangeTextDocument(event => {
+            if (event.document.languageId && this.isLikelyCodeFile(event.document)) {
+                // Check if this might be a Copilot-generated change
+                if (event.contentChanges.length > 0) {
+                    const changes = event.contentChanges;
+                    if (this.looksLikeCopilotGeneration(changes)) {
+                        this.onCopilotTaskCompleted();
+                    }
+                }
             }
-            
-            this.checkCopilotOutputChannel();
-        }, 1000);
-
-        const intervalDisposable = new vscode.Disposable(() => {
-            clearInterval(checkInterval);
         });
 
-        this.disposables.push(intervalDisposable);
+        this.disposables.push(textDocumentDisposable);
     }
 
     /**
@@ -133,26 +134,7 @@ export class CopilotMonitor {
         }, 500);
     }
 
-    /**
-     * Check Copilot output channel for completion messages
-     */
-    private checkCopilotOutputChannel(): void {
-        // Try to find GitHub Copilot output channel
-        // Note: This is a simplified approach as VS Code doesn't provide direct access to all output channels
-        
-        // We can monitor for document changes that might indicate Copilot activity
-        vscode.workspace.onDidChangeTextDocument(event => {
-            if (event.document.languageId && this.isLikelyCodeFile(event.document)) {
-                // Check if this might be a Copilot-generated change
-                if (event.contentChanges.length > 0) {
-                    const changes = event.contentChanges;
-                    if (this.looksLikeCopilotGeneration(changes)) {
-                        this.onCopilotTaskCompleted();
-                    }
-                }
-            }
-        });
-    }
+
 
     /**
      * Check if document is likely a code file
@@ -180,6 +162,14 @@ export class CopilotMonitor {
      * Handle Copilot task completion
      */
     private onCopilotTaskCompleted(): void {
+        // Debounce: only play sound if enough time has passed since last play
+        const now = Date.now();
+        if (now - this.lastSoundPlayTime < this.minSoundIntervalMs) {
+            console.log('Copilot task completed detected but debounced (too soon)');
+            return;
+        }
+        
+        this.lastSoundPlayTime = now;
         console.log('Copilot task completed detected');
         this.soundPlayer.playCompletionSound();
         
