@@ -30,9 +30,6 @@ jobs:
     - name: Install system sound dependencies
       run: sudo apt-get update && sudo apt-get install -y beep alsa-utils pulseaudio-utils
 
-    - name: Install system sound dependencies
-      run: sudo apt-get update && sudo apt   Ensure the fallback-get logic (`No system sound commands install -y beep alsa-utils pulsea available, using VS Code notification as fallback`) isudio-utils
-    
     - name: Checkout code
       uses: actions/checkout@v4
     
