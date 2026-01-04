@@ -3,8 +3,14 @@ name: VS Code Extension CI/CD
 on:
   push:
     branches: [ "main", "master" ]
+    paths:
+      - 'src/**'
+      - 'test/**'
   pull_request:
     branches: [ "main", "master" ]
+    paths:
+      - 'src/**'
+      - 'test/**'
   release:
     types: [published]
 
@@ -121,4 +127,5 @@ jobs:
         name: vsix-package
         path: '*.vsix'
         retention-days: 30
+
 
