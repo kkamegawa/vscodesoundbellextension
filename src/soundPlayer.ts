@@ -297,6 +297,11 @@ export class SoundPlayer {
     private async playSystemSound(): Promise<void> {
         const platform = process.platform;
         let commands: string[] = [];
+        
+        // Check if we're in a test/CI environment
+        const isTestEnvironment = process.env.NODE_ENV === 'test' || 
+                                  process.env.CI === 'true' ||
+                                  typeof (global as any).it === 'function';
 
         switch (platform) {
             case 'win32':
@@ -357,8 +362,13 @@ export class SoundPlayer {
         try {
             await this.playVSCodeNotification();
         } catch (fallbackError) {
-            // Final catch - don't throw, just log
-            console.log('VS Code notification fallback also failed, but this is OK in test environments');
+            // In test/CI environments, don't throw errors - audio devices may not be available
+            if (isTestEnvironment) {
+                console.log('Test/CI environment detected, suppressing audio errors (this is normal)');
+                return; // Return successfully without throwing
+            }
+            // In production environments, log but don't throw to avoid disrupting the extension
+            console.log('VS Code notification fallback also failed, but continuing gracefully');
         }
     }
 
