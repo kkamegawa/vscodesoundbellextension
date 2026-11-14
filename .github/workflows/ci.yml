@@ -6,11 +6,19 @@ on:
     paths:
       - 'src/**'
       - 'test/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/dependabot.yml'
+      - '.github/workflows/**'
   pull_request:
     branches: [ "main", "master" ]
     paths:
       - 'src/**'
       - 'test/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/dependabot.yml'
+      - '.github/workflows/**'
   release:
     types: [published]
 
@@ -24,7 +32,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [24.x, 22.x]
+        node-version: [24.x]
 
     steps:
     - name: Install system sound dependencies
