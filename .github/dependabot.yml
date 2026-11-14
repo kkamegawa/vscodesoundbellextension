@@ -8,10 +8,6 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
-    reviewers:
-      - "your-username"
-    assignees:
-      - "your-username"
     commit-message:
       prefix: "deps"
       include: "scope"
@@ -38,12 +34,21 @@ updates:
           - "typescript"
           - "mocha"
           - "@vscode/*"
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
     commit-message:
       prefix: "ci"
       include: "scope"
