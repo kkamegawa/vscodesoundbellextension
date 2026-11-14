@@ -1,0 +1,129 @@
+name: Release VSIX
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+env:
+  NODE_VERSION: '24.x'
+
+jobs:
+  release:
+    name: Build and create draft release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install system sound dependencies
+        run: sudo apt-get update && sudo apt-get install -y beep alsa-utils pulseaudio-utils
+
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Ensure tag commit is on main branch
+        shell: bash
+        run: |
+          git fetch origin main
+          if git merge-base --is-ancestor "${GITHUB_SHA}" "origin/main"; then
+            echo "Tag commit belongs to main history."
+          else
+            echo "Tag commit is not on main branch history."
+            exit 1
+          fi
+
+      - name: Start Xvfb
+        run: |
+          Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync package version from tag
+        id: version
+        shell: bash
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME}"
+          if [[ "${TAG_NAME}" != v* ]]; then
+            echo "Release tags must start with a lowercase v (for example, v1.2.3)."
+            exit 1
+          fi
+
+          VERSION="${TAG_NAME#v}"
+          npm version "${VERSION}" --no-git-tag-version --allow-same-version --ignore-scripts
+
+          EXPECTED_VERSION="${VERSION}" node <<'NODE'
+          const fs = require('node:fs');
+
+          const expected = process.env.EXPECTED_VERSION;
+          const packageVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+          const lockVersion = JSON.parse(fs.readFileSync('package-lock.json', 'utf8')).version;
+
+          if (packageVersion !== expected || lockVersion !== expected) {
+            console.error(`Expected package.json and package-lock.json to match ${expected}; found ${packageVersion} and ${lockVersion}.`);
+            process.exit(1);
+          }
+          NODE
+
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Run security audit
+        run: npm audit --audit-level moderate
+
+      - name: Compile TypeScript
+        run: npm run compile
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+        env:
+          DISPLAY: ':99.0'
+
+      - name: Package extension
+        run: npm run package
+
+      - name: Verify VSIX version
+        id: package
+        shell: bash
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          VSIX_PATH="$(find . -maxdepth 1 -name '*.vsix' -print -quit)"
+          if [[ -z "${VSIX_PATH}" ]]; then
+            echo "VSIX file was not generated."
+            exit 1
+          fi
+
+          VSIX_VERSION="$(unzip -p "${VSIX_PATH}" extension/package.json | node -e 'let data = ""; process.stdin.on("data", chunk => data += chunk); process.stdin.on("end", () => console.log(JSON.parse(data).version));')"
+          if [[ "${VSIX_VERSION}" != "${EXPECTED_VERSION}" ]]; then
+            echo "VSIX manifest version (${VSIX_VERSION}) does not match tag version (${EXPECTED_VERSION})."
+            exit 1
+          fi
+
+          echo "VSIX manifest version is ${VSIX_VERSION}."
+          echo "vsix_path=${VSIX_PATH}" >> "${GITHUB_OUTPUT}"
+
+      - name: Create draft GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          draft: true
+          generate_release_notes: true
+          files: ${{ steps.package.outputs.vsix_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
