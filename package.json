@@ -54,6 +54,16 @@
         "command": "soundNotifier.toggleVSCodeNotification",
         "title": "Toggle VS Code Notification Mode",
         "category": "Sound Notifier for Agent task"
+      },
+      {
+        "command": "soundNotifier.installAgentStopHook",
+        "title": "Install Copilot Agent Completion Hook",
+        "category": "Sound Notifier for Agent task"
+      },
+      {
+        "command": "soundNotifier.uninstallAgentStopHook",
+        "title": "Uninstall Copilot Agent Completion Hook",
+        "category": "Sound Notifier for Agent task"
       }
     ],
     "configuration": {
@@ -62,7 +72,7 @@
         "soundNotifier.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable sound notifications when Agent task completes"
+          "description": "Enable sound notifications when the Copilot agent finishes a turn; install the Copilot Agent Completion Hook command first"
         },
         "soundNotifier.soundFiles": {
           "type": "object",
