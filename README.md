@@ -1,33 +1,28 @@
 # VS Code Extension: Copilot Sound Notifier
 
-A VS Code extension that plays sounds when GitHub Copilot agent completes tasks.
-It extension is written in GitHub Copilot Agent Mode(over 99%).
+[日本語](README_ja.md)
 
-This extension enhances your coding experience by providing auditory feedback when Copilot completes its tasks, helping you stay focused and informed without needing to constantly check the editor.
+A VS Code extension that plays a sound when a GitHub Copilot agent finishes a turn and hands control back to you. It provides an audible cue so you can stay focused without watching the editor.
 
-## known issues
-
-- The extension may not work correctly if the Copilot agent is not properly configured or enabled in your VS Code settings.
-- Some sound formats may not be supported on all platforms, ensure you have the required audio libraries installed.
-
-## contributions
-
-Contributions are welcome! Please read the [Contributing Guide](CONTRIBUTING.md) for details on how to contribute to this project.
+Completion detection uses Copilot's `agentStop` hook. The hook feature is currently in preview, so sound notifications are opt-in and require installing the user-level hook.
 
 ## Features
 
-- **Cross-platform support**: Works on macOS, Windows, and Linux
-- **Custom sound files**: Support for mp4, wav, wma, webm formats
-- **Platform-specific settings**: Configure different sounds and commands for each OS
-- **System sound fallback**: Uses OS built-in system sounds when custom files aren't specified
-- **Configurable commands**: Customize sound playback commands per platform
+- Cross-platform support for macOS, Windows, and Linux
+- Custom sound files and platform-specific playback commands
+- System sound fallback when no custom sound file is configured
+- Optional VS Code notification mode
+- Explicit installation and removal of the Copilot completion hook
 
-## Installation
+## Install the completion hook
 
-1. Clone this repository
-2. Run `npm install` to install dependencies
-3. Press F5 to launch the Extension Development Host
-4. The extension will be active and ready to monitor Copilot activity
+1. Open the Command Palette in VS Code.
+2. Run **Sound Notifier: Install Copilot Agent Completion Hook**.
+3. Start a new Copilot session so it loads the hook configuration.
+
+The hook runs on the Copilot agent runtime host. Node.js 24 or later must be installed there and available as `node` on `PATH`. In a remote or container session, install Node.js in that remote or container environment.
+
+To remove the hook, run **Sound Notifier: Uninstall Copilot Agent Completion Hook** from the Command Palette. The extension removes only the hook files it manages.
 
 ## Configuration
 
@@ -35,58 +30,42 @@ Configure the extension through VS Code settings:
 
 ```json
 {
-  "copilotSoundNotifier.enabled": true,
-  "copilotSoundNotifier.soundFiles": {
+  "soundNotifier.enabled": true,
+  "soundNotifier.soundFiles": {
     "win32": "C:/path/to/sound.wav",
-    "darwin": "/path/to/sound.wav", 
+    "darwin": "/path/to/sound.wav",
     "linux": "/path/to/sound.wav"
   },
-  "copilotSoundNotifier.soundCommands": {
+  "soundNotifier.soundCommands": {
     "win32": "powershell -c (New-Object Media.SoundPlayer \"{file}\").PlaySync()",
     "darwin": "afplay \"{file}\"",
     "linux": "paplay \"{file}\""
   },
-  "copilotSoundNotifier.volume": 0.5
+  "soundNotifier.volume": 0.5
 }
 ```
 
-## Supported Audio Formats
-
-- MP4 (.mp4)
-- WAV (.wav)
-- WMA (.wma)
-- WebM (.webm)
+Leave a platform's sound file empty to use a system sound. The available audio formats depend on the playback command and operating system; WAV, MP4, WMA, and WebM are supported by the extension's file validation.
 
 ## Commands
 
-- `Copilot Sound Notifier: Play Completion Sound` - Manually trigger the completion sound
-- `Copilot Sound Notifier: Test Sound` - Test the current sound configuration
-
-## Security
-
-This extension is regularly scanned for security vulnerabilities using:
-
-- **GitHub Advanced Security CodeQL** - Static analysis for code vulnerabilities
-- **Dependabot** - Automated dependency vulnerability scanning
-- **npm audit** - Package vulnerability checking
-
-For security concerns, please see our [Security Policy](SECURITY.md).
+- **Sound Notifier: Install Copilot Agent Completion Hook** — enable completion sounds for future Copilot sessions
+- **Sound Notifier: Uninstall Copilot Agent Completion Hook** — remove the extension-managed user hook
+- **Sound Notifier: Play Completion Sound** — play the configured sound manually
+- **Sound Notifier: Test Sound** — test the current sound configuration
+- **Sound Notifier: Toggle VS Code Notification Mode** — toggle the built-in notification playback mode
 
 ## Development
 
-This extension follows t_wada style development methodology with TDD approach.
+1. Clone this repository.
+2. Run `npm install` to install dependencies.
+3. Press F5 to launch the Extension Development Host.
 
-### Running Tests
+Run the tests with `npm test` and compile with `npm run compile`.
 
-```bash
-npm test
-```
+## Security
 
-### Building
-
-```bash
-npm run compile
-```
+This extension is regularly scanned for security vulnerabilities using GitHub Advanced Security CodeQL, Dependabot, and `npm audit`. For security concerns, please see the [Security Policy](SECURITY.md).
 
 ## License
 

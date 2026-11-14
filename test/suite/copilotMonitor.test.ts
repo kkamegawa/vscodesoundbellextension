@@ -1,32 +1,39 @@
 import * as assert from 'assert';
+import { spawnSync } from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { CopilotMonitor } from '../../src/copilotMonitor';
 import { EXTENSION_ID } from './testConstants';
 
 suite('CopilotMonitor Test Suite', () => {
     let context: vscode.ExtensionContext;
-    let mockSoundPlayer: any;
+    let hookDirectory: string;
+    let monitor: CopilotMonitor;
     let soundPlayCount: number;
 
     suiteSetup(async () => {
-        // Wait for extension to activate
         const extension = vscode.extensions.getExtension(EXTENSION_ID);
         if (extension && !extension.isActive) {
             await extension.activate();
         }
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
     });
 
     setup(() => {
         soundPlayCount = 0;
-        mockSoundPlayer = {
+        const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'sound-notifier-hook-test-'));
+        hookDirectory = path.join(temporaryDirectory, 'copilot', 'hooks');
+        monitor = new CopilotMonitor({
             playCompletionSound: () => {
                 soundPlayCount++;
-                console.log(`Sound played (count: ${soundPlayCount})`);
             }
-        };
-        
-        // Create a mock context
+        }, {
+            hooksDirectory: hookDirectory,
+            hookScriptSource: path.resolve(__dirname, '../../../scripts/copilot-agent-stop.cjs')
+        });
+
         context = {
             subscriptions: [],
             workspaceState: {} as any,
@@ -35,7 +42,7 @@ suite('CopilotMonitor Test Suite', () => {
             extensionUri: vscode.Uri.file(''),
             extensionPath: '',
             environmentVariableCollection: {} as any,
-            asAbsolutePath: (path: string) => path,
+            asAbsolutePath: (filePath: string) => filePath,
             storageUri: undefined,
             storagePath: undefined,
             globalStorageUri: vscode.Uri.file(''),
@@ -48,122 +55,71 @@ suite('CopilotMonitor Test Suite', () => {
         };
     });
 
-    test('Should not play sound multiple times in quick succession (debouncing)', async function() {
-        this.timeout(15000);
-
-        const monitor = new CopilotMonitor(mockSoundPlayer);
-        
-        // Start monitoring
-        monitor.start(context);
-        
-        // Simulate rapid text changes that would trigger the sound
-        const doc = await vscode.workspace.openTextDocument({
-            language: 'typescript',
-            content: 'const x = 1;'
-        });
-        
-        const editor = await vscode.window.showTextDocument(doc);
-        
-        // Make multiple rapid edits
-        await editor.edit(editBuilder => {
-            editBuilder.insert(new vscode.Position(0, 12), '\nconst y = 2; // This is a long comment that should trigger the Copilot detection heuristic');
-        });
-        
-        // Wait a moment
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        await editor.edit(editBuilder => {
-            editBuilder.insert(new vscode.Position(1, 0), '\nconst z = 3; // Another long comment that should also trigger the detection mechanism');
-        });
-        
-        // Wait a moment
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        await editor.edit(editBuilder => {
-            editBuilder.insert(new vscode.Position(2, 0), '\nconst a = 4; // Yet another long comment to ensure we test the debouncing properly');
-        });
-        
-        // Wait for any pending operations
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Due to debouncing (5 second minimum interval), sound should only play once
-        assert.ok(soundPlayCount <= 1, `Sound should play at most once due to debouncing, but played ${soundPlayCount} times`);
-        
-        // Stop monitoring and cleanup
+    teardown(() => {
         monitor.stop();
+        fs.rmSync(path.dirname(path.dirname(hookDirectory)), { recursive: true, force: true });
+    });
+
+    test('does not treat ordinary document edits as agent completion', async () => {
+        monitor.start(context);
+
+        const document = await vscode.workspace.openTextDocument({
+            language: 'typescript',
+            content: 'const original = 1;'
+        });
+        const editor = await vscode.window.showTextDocument(document);
+        await editor.edit(editBuilder => {
+            editBuilder.insert(new vscode.Position(0, document.lineAt(0).text.length), '\nconst generated = 2; // a large insertion is not an agent completion event');
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+        assert.strictEqual(soundPlayCount, 0, 'Document edits must not play a completion sound');
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
     });
 
-    test('Should play sound after debounce period expires', async function() {
-        this.timeout(15000);
-
-        const monitor = new CopilotMonitor(mockSoundPlayer);
+    test('plays only for valid agentStop end-turn signals', async () => {
+        monitor.installAgentStopHook();
         monitor.start(context);
-        
-        const doc = await vscode.workspace.openTextDocument({
-            language: 'typescript',
-            content: 'const x = 1;'
+
+        const hookScript = path.join(hookDirectory, 'sound-notifier-agent-stop.cjs');
+        const completedTurn = spawnSync('node', [hookScript], {
+            input: JSON.stringify({ stopReason: 'end_turn', stop_hook_active: false }),
+            encoding: 'utf8'
         });
-        
-        const editor = await vscode.window.showTextDocument(doc);
-        
-        // First edit
-        await editor.edit(editBuilder => {
-            editBuilder.insert(new vscode.Position(0, 12), '\nconst y = 2; // This is a long comment that should trigger the Copilot detection heuristic');
+        const invalidInput = spawnSync('node', [hookScript], { input: '{', encoding: 'utf8' });
+        const continuingTurn = spawnSync('node', [hookScript], {
+            input: JSON.stringify({ stopReason: 'end_turn', stop_hook_active: true }),
+            encoding: 'utf8'
         });
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const firstCount = soundPlayCount;
-        
-        // Wait for debounce period to expire (5 seconds + buffer)
-        console.log('Waiting for debounce period to expire...');
-        await new Promise(resolve => setTimeout(resolve, 6000));
-        
-        // Second edit after debounce period
-        await editor.edit(editBuilder => {
-            editBuilder.insert(new vscode.Position(1, 0), '\nconst z = 3; // Another long comment after debounce period has expired');
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Sound should have played twice - once for first edit, once after debounce period
-        assert.ok(soundPlayCount >= 1, `Sound should play at least once after debounce period, but played ${soundPlayCount} times`);
-        
-        monitor.stop();
-        await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+        assert.strictEqual(completedTurn.status, 0, completedTurn.stderr);
+        assert.strictEqual(invalidInput.status, 0);
+        assert.strictEqual(continuingTurn.status, 0);
+        assert.deepStrictEqual(JSON.parse(completedTurn.stdout), {});
+        assert.deepStrictEqual(JSON.parse(invalidInput.stdout), {});
+        assert.deepStrictEqual(JSON.parse(continuingTurn.stdout), {});
+
+        await waitForSoundCount(1);
+        assert.strictEqual(soundPlayCount, 1, 'Only the completed turn should play one sound');
     });
 
-    test('Should properly dispose of event listeners on stop', async function() {
-        this.timeout(5000);
+    test('installs and removes only its user-level hook files', () => {
+        const installedAt = monitor.installAgentStopHook();
+        assert.strictEqual(installedAt, hookDirectory);
+        assert.ok(fs.existsSync(path.join(hookDirectory, 'sound-notifier-agent-stop.json')));
+        assert.ok(fs.existsSync(path.join(hookDirectory, 'sound-notifier-agent-stop.cjs')));
+        assert.ok(fs.existsSync(path.join(hookDirectory, '.sound-notifier-agent-stop-managed')));
 
-        const monitor = new CopilotMonitor(mockSoundPlayer);
-        monitor.start(context);
-        
-        // Verify subscriptions were added
-        const initialSubscriptionCount = context.subscriptions.length;
-        assert.ok(initialSubscriptionCount > 0, 'Subscriptions should be registered');
-        
-        // Stop monitoring
-        monitor.stop();
-        
-        // Verify listeners were disposed (subscriptions array should be empty in monitor)
-        // We can test this by trying to edit a document and ensuring no sound plays
-        const doc = await vscode.workspace.openTextDocument({
-            language: 'typescript',
-            content: 'const x = 1;'
-        });
-        
-        const editor = await vscode.window.showTextDocument(doc);
-        
-        await editor.edit(editBuilder => {
-            editBuilder.insert(new vscode.Position(0, 12), '\nconst y = 2; // This should not trigger any sound after stop');
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // No sound should have played after stop
-        assert.strictEqual(soundPlayCount, 0, 'No sound should play after monitor is stopped');
-        
-        await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+        const removedAt = monitor.uninstallAgentStopHook();
+        assert.strictEqual(removedAt, hookDirectory);
+        assert.ok(!fs.existsSync(path.join(hookDirectory, 'sound-notifier-agent-stop.json')));
+        assert.ok(!fs.existsSync(path.join(hookDirectory, 'sound-notifier-agent-stop.cjs')));
+        assert.ok(!fs.existsSync(path.join(hookDirectory, '.sound-notifier-agent-stop-managed')));
     });
+
+    async function waitForSoundCount(expectedCount: number): Promise<void> {
+        const deadline = Date.now() + 3000;
+        while (Date.now() < deadline && soundPlayCount < expectedCount) {
+            await new Promise(resolve => setTimeout(resolve, 25));
+        }
+    }
 });
