@@ -67,4 +67,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-For more information about this extension, visit the [GitHub repository](https://github.com/username/soundmsg).
+For more information about this extension, visit the [GitHub repository](https://github.com/kkamegawa/vscodesoundbellextension).
