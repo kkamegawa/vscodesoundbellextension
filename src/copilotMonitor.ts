@@ -11,6 +11,7 @@ const EVENT_DIRECTORY = '.sound-notifier-events';
 const MANAGED_MARKER_PREFIX = 'sound-notifier-agent-stop-hook-v1';
 const SCRIPT_OWNERSHIP_HEADER = '// Managed by the Sound Notifier VS Code extension.';
 const MAX_SIGNAL_AGE_MS = 30_000;
+const MAX_HANDLED_SIGNALS = 256;
 
 export interface CopilotMonitorOptions {
     extensionPath?: string;
@@ -143,6 +144,7 @@ export class CopilotMonitor {
         return {
             version: 1,
             hooks: {
+                // The Copilot harness uses camelCase events with camelCase payloads.
                 agentStop: [
                     {
                         type: 'command',
@@ -235,6 +237,12 @@ export class CopilotMonitor {
         const age = Date.now() - Number(timestampMatch[1]);
         const signalPath = path.join(this.eventDirectory, filename);
         this.handledSignals.add(filename);
+        if (this.handledSignals.size > MAX_HANDLED_SIGNALS) {
+            const oldestSignal = this.handledSignals.values().next().value;
+            if (oldestSignal !== undefined) {
+                this.handledSignals.delete(oldestSignal);
+            }
+        }
         this.removeIfExists(signalPath);
 
         if (age < 0 || age > MAX_SIGNAL_AGE_MS) {
