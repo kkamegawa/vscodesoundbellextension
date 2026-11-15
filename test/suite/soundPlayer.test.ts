@@ -177,10 +177,19 @@ suite('Sound Notifier Extension Test Suite', () => {
 
     test('Should include the bundled Copilot completion sound', () => {
         const audioExtension = vscode.extensions.getExtension(LOCAL_AUDIO_EXTENSION_ID);
+        const extension = vscode.extensions.getExtension(EXTENSION_ID);
         assert.ok(audioExtension, 'Local audio companion should be installed');
+        assert.ok(extension, 'Main extension should be installed');
 
         const soundFile = path.join(audioExtension.extensionPath, 'media', 'sound', 'task_complete1.wav');
+        const sourceSoundFile = path.join(extension.extensionPath, 'media', 'sound', 'task_complete1.wav');
         assert.ok(fs.existsSync(soundFile), 'Bundled completion sound should exist in the local audio extension');
+        assert.ok(fs.existsSync(sourceSoundFile), 'Original completion sound should exist in the source extension');
+        assert.deepStrictEqual(
+            fs.readFileSync(soundFile),
+            fs.readFileSync(sourceSoundFile),
+            'The local audio companion should bundle the original sound without changing its audio data'
+        );
     });
 
     test('Should create LocalAudioClient instance', () => {
