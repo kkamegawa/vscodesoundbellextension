@@ -16,8 +16,8 @@ export class LocalAudioClient {
         }
     }
 
-    public async testSound(): Promise<void> {
-        await vscode.commands.executeCommand(LOCAL_AUDIO_TEST_COMMAND);
+    public async testSound(): Promise<string | undefined> {
+        return vscode.commands.executeCommand<string>(LOCAL_AUDIO_TEST_COMMAND);
     }
 
     private showUnavailableMessage(): void {

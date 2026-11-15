@@ -41,6 +41,44 @@ suite('Sound Notifier Extension Test Suite', () => {
         assert.ok(hasLocalPlaySound, 'The UI companion playback command should be registered');
     });
 
+    test('Should report bundled playback while completion notifications are enabled', async function() {
+        this.timeout(10000);
+
+        const config = vscode.workspace.getConfiguration('soundNotifier');
+        const keys = [
+            'enabled',
+            'soundFiles',
+            'soundCommands',
+            'useBundledSound',
+            'useDefaultSystemSound',
+            'useVSCodeNotification'
+        ];
+        const originalValues = new Map<string, unknown>();
+
+        for (const key of keys) {
+            originalValues.set(key, config.inspect<unknown>(key)?.globalValue);
+        }
+
+        try {
+            await config.update('enabled', true, vscode.ConfigurationTarget.Global);
+            await config.update('soundFiles', {}, vscode.ConfigurationTarget.Global);
+            await config.update('soundCommands', {}, vscode.ConfigurationTarget.Global);
+            await config.update('useBundledSound', true, vscode.ConfigurationTarget.Global);
+            await config.update('useDefaultSystemSound', false, vscode.ConfigurationTarget.Global);
+            await config.update('useVSCodeNotification', true, vscode.ConfigurationTarget.Global);
+
+            const source = await vscode.commands.executeCommand<string>(LOCAL_AUDIO_TEST_COMMAND);
+            assert.ok(
+                source === 'bundled' || source === 'skipped',
+                `Expected the bundled sound or a test-environment skip, but received: ${source}`
+            );
+        } finally {
+            for (const key of keys) {
+                await config.update(key, originalValues.get(key), vscode.ConfigurationTarget.Global);
+            }
+        }
+    });
+
     test('Should execute testSound command without errors', async function() {
         this.timeout(10000); // Increase timeout for sound operations
         

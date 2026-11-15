@@ -21,8 +21,33 @@ export function activate(context: vscode.ExtensionContext) {
 
     const testCommand = vscode.commands.registerCommand('soundNotifier.testSound', async () => {
         try {
-            await localAudioClient.testSound();
-            vscode.window.showInformationMessage('Test sound played on the local machine.');
+            const playbackSource = await localAudioClient.testSound();
+            switch (playbackSource) {
+                case 'bundled':
+                    vscode.window.showInformationMessage('Bundled completion sound played on the local machine.');
+                    break;
+                case 'custom':
+                    vscode.window.showInformationMessage('Configured custom sound played on the local machine.');
+                    break;
+                case 'system':
+                    vscode.window.showWarningMessage('A system sound was used because the configured or bundled audio file could not be played. Check the Extension Host output for details.');
+                    break;
+                case 'command':
+                    vscode.window.showWarningMessage('A fallback sound command was used because the configured or bundled audio file could not be played. Check the Extension Host output for details.');
+                    break;
+                case 'notification':
+                    vscode.window.showWarningMessage('No audio command played a sound; a VS Code notification was shown instead.');
+                    break;
+                case 'disabled':
+                    vscode.window.showWarningMessage('Sound notifications are disabled.');
+                    break;
+                case 'skipped':
+                    vscode.window.showInformationMessage('Sound playback was skipped in the test environment.');
+                    break;
+                default:
+                    vscode.window.showWarningMessage('The sound test finished, but the playback source could not be identified.');
+                    break;
+            }
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             vscode.window.showErrorMessage(`Could not play a test sound on the local machine: ${message}`);

@@ -3,6 +3,8 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
+export type SoundPlaybackSource = 'custom' | 'bundled' | 'system' | 'command' | 'notification' | 'disabled' | 'skipped';
+
 export class SoundPlayer {
     private config: vscode.WorkspaceConfiguration;
     private readonly extensionPath: string;
@@ -30,11 +32,12 @@ export class SoundPlayer {
     /**
      * Test sound functionality
      */
-    public async testSound(): Promise<void> {
+    public async testSound(): Promise<SoundPlaybackSource> {
         try {
             console.log('Testing sound playback...');
-            await this.playSound();
-            console.log('Sound test completed successfully');
+            const source = await this.playSound(false);
+            console.log(`Sound test completed using: ${source}`);
+            return source;
         } catch (error) {
             console.error('Failed to play test sound:', error);
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -55,6 +58,7 @@ export class SoundPlayer {
                 throw error;
             } else {
                 console.log('Test environment detected, suppressing error');
+                return 'skipped';
             }
         }
     }
@@ -62,14 +66,18 @@ export class SoundPlayer {
     /**
      * Play sound based on current platform and configuration
      */
-    private async playSound(): Promise<void> {
+    private async playSound(showCompletionNotification = true): Promise<SoundPlaybackSource> {
+        if (!this.config.get<boolean>('enabled', true)) {
+            return 'disabled';
+        }
+
         const isTestEnvironment = process.env.NODE_ENV === 'test' ||
                                   process.env.CI === 'true' ||
                                   typeof (global as any).it === 'function';
 
         if (isTestEnvironment) {
             console.log('Test/CI environment detected, skipping audio playback logic');
-            return;
+            return 'skipped';
         }
 
         const platform = process.platform;
@@ -93,7 +101,7 @@ export class SoundPlayer {
         });
 
         // Show the toast when requested, but keep the audio path enabled.
-        if (useVSCodeNotification) {
+        if (useVSCodeNotification && showCompletionNotification) {
             console.log('Showing VS Code notification in addition to sound');
             await this.playVSCodeNotification();
         }
@@ -111,7 +119,7 @@ export class SoundPlayer {
                     console.log('Using default command for custom sound file');
                     await this.playCustomSoundFile(customSoundFile);
                 }
-                return;
+                return 'custom';
             } catch (error) {
                 console.error('Failed to play custom sound:', error);
                 // Fall through to system sound
@@ -127,7 +135,7 @@ export class SoundPlayer {
                 } else {
                     await this.playCustomSoundFile(bundledSoundFile);
                 }
-                return;
+                return 'bundled';
             } catch (error) {
                 console.error('Failed to play bundled Copilot completion sound:', error);
                 // Fall through to the system sound.
@@ -138,8 +146,7 @@ export class SoundPlayer {
         if (useDefaultSystemSound) {
             console.log('Using system sound');
             try {
-                await this.playSystemSound();
-                return;
+                return await this.playSystemSound();
             } catch (error) {
                 console.error('Failed to play system sound:', error);
                 // Fall through to default commands
@@ -149,12 +156,13 @@ export class SoundPlayer {
         // Final fallback: Use default OS commands or VS Code notification
         console.log('Using default commands fallback');
         try {
-            await this.playWithDefaultCommands();
+            return await this.playWithDefaultCommands();
         } catch (error) {
             console.error('Failed to play with default commands:', error);
             // Final fallback to VS Code notification
             console.log('Final fallback to VS Code notification');
             await this.playVSCodeNotification();
+            return 'notification';
         }
     }
 
@@ -212,7 +220,9 @@ export class SoundPlayer {
 
         const platform = process.platform;
         const defaultCommands = this.config.get<any>('defaultSoundCommands', {});
-        let command: string;
+        let command: string | undefined;
+        let executable: string | undefined;
+        let args: string[] = [];
 
         // Use a configured command only when it explicitly accepts a file path.
         if (typeof defaultCommands[platform] === 'string' && defaultCommands[platform].includes('{file}')) {
@@ -221,8 +231,27 @@ export class SoundPlayer {
             // Fallback to hardcoded defaults
             switch (platform) {
                 case 'win32':
-                    // Fixed PowerShell command with proper quoting and error handling
-                    command = `powershell -c "try { (New-Object Media.SoundPlayer '${soundFile.replace(/'/g, "''")}').PlaySync() } catch { [System.Media.SystemSounds]::Exclamation.Play() }"`;
+                    // Avoid shell quoting and let playback errors reach the caller instead of
+                    // silently replacing the bundled sound with the Windows default sound.
+                    executable = 'powershell.exe';
+                    args = [
+                        '-NoLogo',
+                        '-NoProfile',
+                        '-NonInteractive',
+                        '-Command',
+                        [
+                            "$ErrorActionPreference = 'Stop'",
+                            'try {',
+                            '  $player = New-Object -TypeName System.Media.SoundPlayer',
+                            `  $player.SoundLocation = '${soundFile.replace(/'/g, "''")}'`,
+                            '  $player.Load()',
+                            '  $player.PlaySync()',
+                            '} catch {',
+                            '  [Console]::Error.WriteLine($_.Exception.Message)',
+                            '  exit 1',
+                            '}'
+                        ].join('; ')
+                    ];
                     break;
                 case 'darwin':
                     command = `afplay "${soundFile}"`;
@@ -236,32 +265,41 @@ export class SoundPlayer {
         }
 
         return new Promise((resolve, reject) => {
-            cp.exec(command, (error, stdout, stderr) => {
+            const callback = (error: cp.ExecException | null, stdout: string | Buffer, stderr: string | Buffer) => {
                 if (error) {
+                    const stderrText = stderr.toString().trim();
                     console.error('Command execution failed:', {
-                        command,
+                        command: executable ? [executable, ...args].join(' ') : command,
                         error: error.message,
                         stdout,
                         stderr
                     });
-                    reject(new Error(`Failed to play sound: ${error.message}`));
+                    reject(new Error(`Failed to play sound: ${stderrText || error.message}`));
                 } else {
                     resolve();
                 }
-            });
+            };
+
+            if (executable) {
+                cp.execFile(executable, args, callback);
+            } else if (command) {
+                cp.exec(command, callback);
+            } else {
+                reject(new Error(`No playback command is available for platform: ${platform}`));
+            }
         });
     }
 
     /**
      * Play sound using configured default commands
      */
-    private async playWithDefaultCommands(): Promise<void> {
+    private async playWithDefaultCommands(): Promise<SoundPlaybackSource> {
         const platform = process.platform;
         const defaultCommands = this.config.get<any>('defaultSoundCommands', {});
         const platformCommand = defaultCommands[platform];
 
         if (platformCommand) {
-            return new Promise((resolve, reject) => {
+            return new Promise<SoundPlaybackSource>((resolve, reject) => {
                 cp.exec(platformCommand, (error, stdout, stderr) => {
                     if (error) {
                         console.error('Default command execution failed:', {
@@ -273,20 +311,20 @@ export class SoundPlayer {
                         // Fallback to system sound on error
                         this.playSystemSound().then(resolve).catch(reject);
                     } else {
-                        resolve();
+                        resolve('command');
                     }
                 });
             });
         } else {
             // Fallback to system sound if no default command configured
-            await this.playSystemSound();
+            return this.playSystemSound();
         }
     }
 
     /**
      * Play system sound
      */
-    private async playSystemSound(): Promise<void> {
+    private async playSystemSound(): Promise<'system' | 'notification'> {
         const platform = process.platform;
         const isTestEnvironment = process.env.NODE_ENV === 'test' ||
                                   process.env.CI === 'true' ||
@@ -323,7 +361,7 @@ export class SoundPlayer {
             default:
                 // Fallback to VS Code notification sound
                 await this.playVSCodeNotification();
-                return;
+                return 'notification';
         }
 
         // Try each command until one succeeds
@@ -341,7 +379,7 @@ export class SoundPlayer {
                         }
                     });
                 });
-                return; // Success, exit the loop
+                return 'system'; // Success, exit the loop
             } catch (error) {
                 // Log without error level to avoid alarming users in CI/test environments
                 console.log(`Command not available or failed: ${command}`);
@@ -354,14 +392,16 @@ export class SoundPlayer {
         console.log('No system sound commands available, using VS Code notification as fallback');
         try {
             await this.playVSCodeNotification();
+            return 'notification';
         } catch (fallbackError) {
             // In test/CI environments, don't throw errors - audio devices may not be available
             if (isTestEnvironment) {
                 console.log('Test/CI environment detected, suppressing audio errors (this is normal)');
-                return; // Return successfully without throwing
+                return 'notification'; // Return successfully without throwing
             }
             // In production environments, log but don't throw to avoid disrupting the extension
             console.log('VS Code notification fallback also failed, but continuing gracefully');
+            return 'notification';
         }
     }
 
