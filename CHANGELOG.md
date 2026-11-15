@@ -7,6 +7,14 @@ All notable changes to the "Sound Notifier for GitHub Copilot" extension will be
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-11-15
+
+### Changed
+
+- Republish the Local Audio Host as `KazushiKamegawa.sound-notifier-local-audio-hostex` because the previous Marketplace extension ID cannot be restored
+- Update the main extension to depend on the replacement Local Audio Host extension
+- Align the main and Local Audio Host extension versions at `1.0.1`
+
 ## [0.0.1] - 2025-07-05
 
 ### Added
