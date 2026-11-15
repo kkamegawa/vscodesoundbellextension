@@ -60,12 +60,13 @@
         },
         "soundNotifier.soundFiles": {
           "type": "object",
+          "scope": "machine",
           "default": {
             "win32": "",
             "darwin": "",
             "linux": ""
           },
-          "description": "Custom sound files for each platform (mp4, wav, wma, webm). Leave empty to use system sounds.",
+          "description": "Custom sound file paths for each platform (mp4, wav, wma, webm). Configure them in user settings; leave empty to use the bundled Copilot completion sound when enabled, then fall back to the system sound if playback fails.",
           "properties": {
             "win32": {
               "type": "string",
@@ -83,12 +84,13 @@
         },
         "soundNotifier.soundCommands": {
           "type": "object",
+          "scope": "machine",
           "default": {
             "win32": "",
             "darwin": "",
             "linux": ""
           },
-          "description": "Custom sound commands for each platform. Leave empty to use VS Code default.",
+          "description": "User-level custom sound commands for each platform. Leave empty to use built-in playback.",
           "properties": {
             "win32": {
               "type": "string",
@@ -121,6 +123,7 @@
         },
         "soundNotifier.defaultSoundCommands": {
           "type": "object",
+          "scope": "machine",
           "default": {
             "win32": "powershell -c \"[System.Media.SystemSounds]::Exclamation.Play()\"",
             "darwin": "afplay /System/Library/Sounds/Glass.aiff",

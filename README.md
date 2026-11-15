@@ -28,6 +28,8 @@ To remove the hook, run **Sound Notifier: Uninstall Copilot Agent Completion Hoo
 
 Configure the extension through VS Code settings:
 
+Local playback settings for sound files and custom commands are machine-scoped and must be set in User settings. Workspace and folder values are ignored because audio playback runs in the local UI extension host.
+
 ```json
 {
   "soundNotifier.enabled": true,

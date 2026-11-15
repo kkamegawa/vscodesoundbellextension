@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import { getTrustedPlatformSettingValues } from './trustedSettings';
 
 export type SoundPlaybackSource = 'custom' | 'bundled' | 'system' | 'command' | 'notification' | 'disabled' | 'skipped';
 
@@ -81,8 +82,8 @@ export class SoundPlayer {
         }
 
         const platform = process.platform;
-        const soundFiles = this.config.get<any>('soundFiles', {});
-        const soundCommands = this.config.get<any>('soundCommands', {});
+        const soundFiles = getTrustedPlatformSettingValues(this.config.inspect<Record<string, string>>('soundFiles'));
+        const soundCommands = getTrustedPlatformSettingValues(this.config.inspect<Record<string, string>>('soundCommands'));
         const useVSCodeNotification = this.config.get<boolean>('useVSCodeNotification', true);
         const useBundledSound = this.config.get<boolean>('useBundledSound', true);
         const useDefaultSystemSound = this.config.get<boolean>('useDefaultSystemSound', true);
@@ -219,7 +220,9 @@ export class SoundPlayer {
         }
 
         const platform = process.platform;
-        const defaultCommands = this.config.get<any>('defaultSoundCommands', {});
+        const defaultCommands = getTrustedPlatformSettingValues(
+            this.config.inspect<Record<string, string>>('defaultSoundCommands')
+        );
         let command: string | undefined;
         let executable: string | undefined;
         let args: string[] = [];
@@ -295,7 +298,9 @@ export class SoundPlayer {
      */
     private async playWithDefaultCommands(): Promise<SoundPlaybackSource> {
         const platform = process.platform;
-        const defaultCommands = this.config.get<any>('defaultSoundCommands', {});
+        const defaultCommands = getTrustedPlatformSettingValues(
+            this.config.inspect<Record<string, string>>('defaultSoundCommands')
+        );
         const platformCommand = defaultCommands[platform];
 
         if (platformCommand) {

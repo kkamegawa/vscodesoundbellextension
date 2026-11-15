@@ -86,9 +86,9 @@
     "package": "vsce package && npm run package:audio",
     "package:audio": "node scripts/package-audio.js",
     "publish": "npm run publish:audio && vsce publish",
-    "publish:audio": "cd local-audio-host && vsce publish --no-yarn",
+    "publish:audio": "node scripts/package-audio.js --publish-marketplace",
     "publish:ovsx": "npm run publish:ovsx:audio && npx ovsx publish",
-    "publish:ovsx:audio": "cd local-audio-host && npx ovsx publish"
+    "publish:ovsx:audio": "node scripts/package-audio.js --publish-open-vsx"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

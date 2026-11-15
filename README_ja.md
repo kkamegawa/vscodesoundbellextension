@@ -28,6 +28,8 @@ GitHub Copilot エージェントがターンを終え、操作をユーザー�
 
 VS Code の設定から拡張機能を構成します。
 
+ローカル再生で使う音声ファイルとカスタムコマンドは machine scope の設定です。User 設定に指定してください。再生はローカルの UI extension host で行うため、Workspace と Folder の値は使用しません。
+
 ```json
 {
   "soundNotifier.enabled": true,

@@ -10,8 +10,12 @@ const generatedDirectories = ['out', path.join('local-audio-host', 'out')];
 for (const relativePath of generatedDirectories) {
     const targetPath = path.resolve(repositoryRoot, relativePath);
     const pathFromRoot = path.relative(repositoryRoot, targetPath);
+    const normalizedPathFromRoot = path.normalize(pathFromRoot);
+    const normalizedRelativePath = path.normalize(relativePath);
+    const pathEscapesRepository = normalizedPathFromRoot === '..' ||
+        normalizedPathFromRoot.startsWith(`..${path.sep}`);
 
-    if (pathFromRoot !== relativePath || path.isAbsolute(pathFromRoot)) {
+    if (normalizedPathFromRoot !== normalizedRelativePath || pathEscapesRepository || path.isAbsolute(pathFromRoot)) {
         throw new Error(`Refusing to clean a path outside the repository: ${targetPath}`);
     }
 

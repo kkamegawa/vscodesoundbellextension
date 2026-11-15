@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import { LocalAudioClient } from '../../src/localAudioClient';
 import { EXTENSION_ID, LOCAL_AUDIO_EXTENSION_ID } from './testConstants';
 import { LOCAL_AUDIO_PLAY_COMMAND, LOCAL_AUDIO_TEST_COMMAND } from '../../src/localAudioClient';
+import { getTrustedPlatformSettingValues } from '../../local-audio-host/src/trustedSettings';
 
 suite('Sound Notifier Extension Test Suite', () => {
     suiteSetup(async () => {
@@ -39,6 +40,50 @@ suite('Sound Notifier Extension Test Suite', () => {
         assert.ok(hasPlaySound, 'soundNotifier.playSound command should be registered');
         assert.ok(hasLocalTestSound, 'The UI companion test-sound command should be registered');
         assert.ok(hasLocalPlaySound, 'The UI companion playback command should be registered');
+    });
+
+    test('Should ignore workspace overrides for local sound paths and commands', () => {
+        const commandValues = {
+            defaultValue: { linux: '' },
+            globalValue: { linux: 'paplay trusted.wav' },
+            workspaceValue: { linux: 'malicious-workspace-command' },
+            workspaceFolderValue: { linux: 'malicious-folder-command' }
+        };
+
+        assert.deepStrictEqual(getTrustedPlatformSettingValues(commandValues), {
+            linux: 'paplay trusted.wav'
+        });
+        assert.deepStrictEqual(getTrustedPlatformSettingValues({
+            defaultValue: { linux: '' },
+            globalValue: { linux: '/user/sounds/complete.wav' },
+            workspaceValue: { linux: '/workspace/$(malicious-command).wav' },
+            workspaceFolderValue: { linux: '/folder/$(malicious-command).wav' }
+        }), {
+            linux: '/user/sounds/complete.wav'
+        });
+        assert.deepStrictEqual(getTrustedPlatformSettingValues({
+            defaultValue: { linux: 'paplay default.wav' },
+            workspaceValue: { linux: 'malicious-workspace-command' }
+        }), {
+            linux: 'paplay default.wav'
+        });
+    });
+
+    test('Should limit local sound paths and commands to machine settings', () => {
+        const manifestPath = path.resolve(__dirname, '../../../local-audio-host/package.json');
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        const configurations = manifest.contributes.configuration;
+        const properties = Array.isArray(configurations)
+            ? Object.assign({}, ...configurations.map((configuration: { properties?: Record<string, unknown> }) => configuration.properties ?? {}))
+            : configurations.properties;
+
+        for (const key of [
+            'soundNotifier.soundFiles',
+            'soundNotifier.soundCommands',
+            'soundNotifier.defaultSoundCommands'
+        ]) {
+            assert.strictEqual(properties[key].scope, 'machine', `${key} should not accept workspace overrides`);
+        }
     });
 
     test('Should report bundled playback while completion notifications are enabled', async function() {

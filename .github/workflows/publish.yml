@@ -86,12 +86,14 @@ jobs:
         VSCE_PAT: ${{ secrets.VSCE_PAT }}
         
     - name: Publish local audio host to Open VSX Registry
+      id: publish_audio_openvsx
       run: npx ovsx publish "$AUDIO_VSIX"
       env:
         OVSX_PAT: ${{ secrets.OVSX_PAT }}
       continue-on-error: true
 
     - name: Publish main extension to Open VSX Registry
+      if: steps.publish_audio_openvsx.outcome == 'success'
       run: npx ovsx publish "$ROOT_VSIX"
       env:
         OVSX_PAT: ${{ secrets.OVSX_PAT }}
