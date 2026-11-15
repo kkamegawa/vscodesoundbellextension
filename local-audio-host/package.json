@@ -2,6 +2,7 @@
   "name": "sound-notifier-audio-client",
   "displayName": "Sound Notifier Local Audio Host",
   "description": "Plays Sound Notifier completion audio on the local VS Code client.",
+  "icon": "icon.png",
   "version": "0.0.2",
   "publisher": "KazushiKamegawa",
   "license": "MIT",

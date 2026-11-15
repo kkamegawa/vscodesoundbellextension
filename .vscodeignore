@@ -17,8 +17,11 @@ webpack.config.js
 .vscode/**
 local-audio-host/**
 media/**
+icon.png
+icon.svg
 scripts/**
 !scripts/copilot-agent-stop.cjs
+!media/icon/task-complete-icon.png
 
 # Development files
 *.map
@@ -44,6 +47,5 @@ Thumbs.db
 !README.md
 !CHANGELOG.md
 !LICENSE
-!icon.png
 !package.json
 out/test/**
