@@ -69,6 +69,28 @@ suite('Sound Notifier Extension Test Suite', () => {
         });
     });
 
+    test('Should package the local audio host with the completion icon', () => {
+        const repositoryRoot = path.resolve(__dirname, '../../..');
+        const extensionDirectory = path.join(repositoryRoot, 'local-audio-host');
+        const rootManifest = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'));
+        const manifest = JSON.parse(fs.readFileSync(path.join(extensionDirectory, 'package.json'), 'utf8'));
+
+        assert.strictEqual(rootManifest.icon, 'media/icon/task-complete-icon.png');
+        assert.ok(fs.existsSync(path.join(repositoryRoot, rootManifest.icon)), 'The workspace extension icon should exist');
+        assert.strictEqual(manifest.icon, 'icon.png');
+        assert.ok(fs.existsSync(path.join(extensionDirectory, manifest.icon)), 'The configured companion icon should exist');
+        assert.deepStrictEqual(
+            fs.readFileSync(path.join(extensionDirectory, manifest.icon)),
+            fs.readFileSync(path.join(repositoryRoot, 'icon.png')),
+            'The local audio host should use the local client icon'
+        );
+        assert.notDeepStrictEqual(
+            fs.readFileSync(path.join(repositoryRoot, 'icon.png')),
+            fs.readFileSync(path.join(repositoryRoot, rootManifest.icon)),
+            'The SSH workspace icon and local client icon should remain distinct'
+        );
+    });
+
     test('Should limit local sound paths and commands to machine settings', () => {
         const manifestPath = path.resolve(__dirname, '../../../local-audio-host/package.json');
         const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));

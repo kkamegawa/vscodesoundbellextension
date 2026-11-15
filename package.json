@@ -43,7 +43,7 @@
   "extensionDependencies": [
     "KazushiKamegawa.sound-notifier-audio-client"
   ],
-  "icon": "icon.png",
+  "icon": "media/icon/task-complete-icon.png",
   "contributes": {
     "commands": [
       {
