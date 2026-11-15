@@ -69,6 +69,10 @@ VS Code の設定から拡張機能を構成します。
 
 この拡張機能は GitHub Advanced Security CodeQL、Dependabot、`npm audit` で定期的に脆弱性を確認しています。セキュリティに関する連絡先は [Security Policy](SECURITY.md) を参照してください。
 
+## 同梱音源の帰属表示
+
+同梱の完了音（`media/sound/task_complete1.wav`）は、プロジェクトメンテナーが Adobe Firefly を使用して生成し、下記の MIT ライセンスのもとで拡張機能と一緒に再配布しています。Adobe の [Firefly FAQ](https://helpx.adobe.com/jp/firefly/web/get-started/learn-the-basics/adobe-firefly-faq.html) では、ベータ機能の出力も製品内で別途制限されていない限り、商用プロジェクトで使用できると説明されています。利用した機能に適用される Adobe の規約と、プロンプトや入力素材に関する権利には従ってください。この帰属表示は Adobe による推奨・承認を意味しません。
+
 ## ライセンス
 
 MIT
