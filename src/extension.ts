@@ -1,34 +1,39 @@
 import * as vscode from 'vscode';
-import { SoundPlayer } from './soundPlayer';
+import { LocalAudioClient } from './localAudioClient';
 import { CopilotMonitor } from './copilotMonitor';
 
-let soundPlayer: SoundPlayer;
+let localAudioClient: LocalAudioClient;
 let copilotMonitor: CopilotMonitor;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Copilot Sound Notifier is now active!');
 
-    // Initialize sound player
-    soundPlayer = new SoundPlayer();
+    // The sound player lives in a UI extension so it can access local audio.
+    localAudioClient = new LocalAudioClient();
     
     // Initialize Copilot monitor
-    copilotMonitor = new CopilotMonitor(soundPlayer);
+    copilotMonitor = new CopilotMonitor(localAudioClient);
 
     // Register commands
-    const playCommand = vscode.commands.registerCommand('soundNotifier.playSound', () => {
-        soundPlayer.playCompletionSound();
+    const playCommand = vscode.commands.registerCommand('soundNotifier.playSound', async () => {
+        await localAudioClient.playCompletionSound();
     });
 
-    const testCommand = vscode.commands.registerCommand('soundNotifier.testSound', () => {
-        soundPlayer.testSound();
-        vscode.window.showInformationMessage('Test sound played! Check console for debug info.');
+    const testCommand = vscode.commands.registerCommand('soundNotifier.testSound', async () => {
+        try {
+            await localAudioClient.testSound();
+            vscode.window.showInformationMessage('Test sound played on the local machine.');
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`Could not play a test sound on the local machine: ${message}`);
+        }
     });
 
     const toggleVSCodeNotificationCommand = vscode.commands.registerCommand('soundNotifier.toggleVSCodeNotification', async () => {
         const config = vscode.workspace.getConfiguration('soundNotifier');
         const current = config.get<boolean>('useVSCodeNotification', false);
         await config.update('useVSCodeNotification', !current, vscode.ConfigurationTarget.Global);
-        vscode.window.showInformationMessage(`VS Code notification mode: ${!current ? 'Enabled' : 'Disabled'}`);
+        vscode.window.showInformationMessage(`VS Code notification alongside sound: ${!current ? 'Enabled' : 'Disabled'}`);
     });
 
     const installAgentStopHookCommand = vscode.commands.registerCommand('soundNotifier.installAgentStopHook', async () => {

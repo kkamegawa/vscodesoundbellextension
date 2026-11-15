@@ -6,8 +6,11 @@ on:
     paths:
       - 'src/**'
       - 'test/**'
+      - 'local-audio-host/**'
+      - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
+      - '.vscodeignore'
       - '.github/dependabot.yml'
       - '.github/workflows/**'
   pull_request:
@@ -15,8 +18,11 @@ on:
     paths:
       - 'src/**'
       - 'test/**'
+      - 'local-audio-host/**'
+      - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
+      - '.vscodeignore'
       - '.github/dependabot.yml'
       - '.github/workflows/**'
 env:
@@ -102,8 +108,6 @@ jobs:
     name: Build & Package
     runs-on: ubuntu-latest
     needs: [test, security]
-    if: github.event_name == 'push'
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v7
@@ -127,7 +131,9 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: vsix-package
-        path: '*.vsix'
+        path: |
+          *.vsix
+          local-audio-host/*.vsix
         retention-days: 30
 
 

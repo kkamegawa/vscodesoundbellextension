@@ -12,13 +12,16 @@ node_modules/**
 .gitignore
 tsconfig.json
 .eslintrc.json
+eslint.config.js
 webpack.config.js
 .vscode/**
+local-audio-host/**
+scripts/**
+!scripts/copilot-agent-stop.cjs
 
 # Development files
 *.map
 *.ts
-!out/**/*.js
 
 # Documentation (keep only essential)
 RELEASE.md
@@ -42,4 +45,4 @@ Thumbs.db
 !LICENSE
 !icon.png
 !package.json
-!out/**
+out/test/**

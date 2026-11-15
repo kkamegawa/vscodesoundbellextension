@@ -1,0 +1,159 @@
+{
+  "name": "sound-notifier-audio-client",
+  "displayName": "Sound Notifier Local Audio Host",
+  "description": "Plays Sound Notifier completion audio on the local VS Code client.",
+  "version": "0.0.2",
+  "publisher": "KazushiKamegawa",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kkamegawa/vscodesoundbellextension"
+  },
+  "engines": {
+    "vscode": "^1.146.0",
+    "node": ">=24.0.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:soundNotifierAudio.playCompletionSound",
+    "onCommand:soundNotifierAudio.testSound"
+  ],
+  "main": "./out/src/extension.js",
+  "extensionKind": [
+    "ui"
+  ],
+  "api": "none",
+  "contributes": {
+    "commands": [
+      {
+        "command": "soundNotifierAudio.playCompletionSound",
+        "title": "Play Local Completion Sound",
+        "category": "Sound Notifier Local Audio"
+      },
+      {
+        "command": "soundNotifierAudio.testSound",
+        "title": "Test Local Sound Playback",
+        "category": "Sound Notifier Local Audio"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "soundNotifierAudio.playCompletionSound",
+          "when": "false"
+        },
+        {
+          "command": "soundNotifierAudio.testSound",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Sound Notifier for Agent task",
+      "properties": {
+        "soundNotifier.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable sound notifications when the Copilot agent finishes a turn; install the Copilot Agent Completion Hook command first"
+        },
+        "soundNotifier.soundFiles": {
+          "type": "object",
+          "default": {
+            "win32": "",
+            "darwin": "",
+            "linux": ""
+          },
+          "description": "Custom sound files for each platform (mp4, wav, wma, webm). Leave empty to use system sounds.",
+          "properties": {
+            "win32": {
+              "type": "string",
+              "description": "Sound file path for Windows"
+            },
+            "darwin": {
+              "type": "string",
+              "description": "Sound file path for macOS"
+            },
+            "linux": {
+              "type": "string",
+              "description": "Sound file path for Linux"
+            }
+          }
+        },
+        "soundNotifier.soundCommands": {
+          "type": "object",
+          "default": {
+            "win32": "",
+            "darwin": "",
+            "linux": ""
+          },
+          "description": "Custom sound commands for each platform. Leave empty to use VS Code default.",
+          "properties": {
+            "win32": {
+              "type": "string",
+              "description": "Sound command for Windows (e.g., 'powershell -c (New-Object Media.SoundPlayer \"{file}\").PlaySync()')"
+            },
+            "darwin": {
+              "type": "string",
+              "description": "Sound command for macOS (e.g., 'afplay \"{file}\"')"
+            },
+            "linux": {
+              "type": "string",
+              "description": "Sound command for Linux (e.g., 'paplay \"{file}\"')"
+            }
+          }
+        },
+        "soundNotifier.useVSCodeNotification": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a VS Code notification in addition to playing the local sound"
+        },
+        "soundNotifier.useDefaultSystemSound": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use the local system sound when no custom sound file is specified"
+        },
+        "soundNotifier.defaultSoundCommands": {
+          "type": "object",
+          "default": {
+            "win32": "powershell -c \"[System.Media.SystemSounds]::Exclamation.Play()\"",
+            "darwin": "afplay /System/Library/Sounds/Glass.aiff",
+            "linux": "paplay /usr/share/sounds/alsa/Front_Left.wav"
+          },
+          "description": "Default system sound commands for each platform",
+          "properties": {
+            "win32": {
+              "type": "string",
+              "description": "Default system sound command for Windows"
+            },
+            "darwin": {
+              "type": "string",
+              "description": "Default system sound command for macOS"
+            },
+            "linux": {
+              "type": "string",
+              "description": "Default system sound command for Linux"
+            }
+          }
+        },
+        "soundNotifier.volume": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Sound volume (0.0 to 1.0)"
+        },
+        "soundNotifier.showNotification": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a notification message when the agent task completes"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "node ../scripts/clean-generated.js && npm run compile",
+    "compile": "tsc -p tsconfig.json"
+  }
+}

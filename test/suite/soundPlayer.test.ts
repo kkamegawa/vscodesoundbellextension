@@ -1,7 +1,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { SoundPlayer } from '../../src/soundPlayer';
-import { EXTENSION_ID } from './testConstants';
+import { LocalAudioClient } from '../../src/localAudioClient';
+import { EXTENSION_ID, LOCAL_AUDIO_EXTENSION_ID } from './testConstants';
+import { LOCAL_AUDIO_PLAY_COMMAND, LOCAL_AUDIO_TEST_COMMAND } from '../../src/localAudioClient';
 
 suite('Sound Notifier Extension Test Suite', () => {
     suiteSetup(async () => {
@@ -9,6 +10,11 @@ suite('Sound Notifier Extension Test Suite', () => {
         const extension = vscode.extensions.getExtension(EXTENSION_ID);
         if (extension && !extension.isActive) {
             await extension.activate();
+        }
+        const localAudioExtension = vscode.extensions.getExtension(LOCAL_AUDIO_EXTENSION_ID);
+        assert.ok(localAudioExtension, 'Local audio companion should be found');
+        if (localAudioExtension && !localAudioExtension.isActive) {
+            await localAudioExtension.activate();
         }
         // Give extension time to fully initialize
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -24,9 +30,13 @@ suite('Sound Notifier Extension Test Suite', () => {
         const commands = await vscode.commands.getCommands();
         const hasTestSound = commands.includes('soundNotifier.testSound');
         const hasPlaySound = commands.includes('soundNotifier.playSound');
+        const hasLocalTestSound = commands.includes(LOCAL_AUDIO_TEST_COMMAND);
+        const hasLocalPlaySound = commands.includes(LOCAL_AUDIO_PLAY_COMMAND);
         
         assert.ok(hasTestSound, 'soundNotifier.testSound command should be registered');
         assert.ok(hasPlaySound, 'soundNotifier.playSound command should be registered');
+        assert.ok(hasLocalTestSound, 'The UI companion test-sound command should be registered');
+        assert.ok(hasLocalPlaySound, 'The UI companion playback command should be registered');
     });
 
     test('Should execute testSound command without errors', async function() {
@@ -122,23 +132,23 @@ suite('Sound Notifier Extension Test Suite', () => {
         });
     });
 
-    test('Should create SoundPlayer instance', () => {
-        const soundPlayer = new SoundPlayer();
-        assert.ok(soundPlayer, 'SoundPlayer instance should be created');
+    test('Should create LocalAudioClient instance', () => {
+        const localAudioClient = new LocalAudioClient();
+        assert.ok(localAudioClient, 'LocalAudioClient instance should be created');
     });
 
     test('Should execute SoundPlayer testSound method', async function() {
         this.timeout(10000);
         
-        const soundPlayer = new SoundPlayer();
-        console.log('Testing SoundPlayer.testSound() method...');
+        const localAudioClient = new LocalAudioClient();
+        console.log('Testing LocalAudioClient.testSound() method...');
         
         try {
-            await soundPlayer.testSound();
-            console.log('SoundPlayer.testSound() completed successfully');
-            assert.ok(true, 'SoundPlayer testSound method executed successfully');
+            await localAudioClient.testSound();
+            console.log('LocalAudioClient.testSound() completed successfully');
+            assert.ok(true, 'LocalAudioClient testSound method executed successfully');
         } catch (error) {
-            console.error('SoundPlayer testSound error:', error);
+            console.error('LocalAudioClient testSound error:', error);
             // Don't fail the test if sound system is not available, just log it
             console.warn('Sound system may not be available in test environment');
             assert.ok(true, 'Test completed (sound system may not be available)');
@@ -148,15 +158,15 @@ suite('Sound Notifier Extension Test Suite', () => {
     test('Should execute SoundPlayer playCompletionSound method', async function() {
         this.timeout(10000);
         
-        const soundPlayer = new SoundPlayer();
-        console.log('Testing SoundPlayer.playCompletionSound() method...');
+        const localAudioClient = new LocalAudioClient();
+        console.log('Testing LocalAudioClient.playCompletionSound() method...');
         
         try {
-            await soundPlayer.playCompletionSound();
-            console.log('SoundPlayer.playCompletionSound() completed successfully');
-            assert.ok(true, 'SoundPlayer playCompletionSound method executed successfully');
+            await localAudioClient.playCompletionSound();
+            console.log('LocalAudioClient.playCompletionSound() completed successfully');
+            assert.ok(true, 'LocalAudioClient playCompletionSound method executed successfully');
         } catch (error) {
-            console.error('SoundPlayer playCompletionSound error:', error);
+            console.error('LocalAudioClient playCompletionSound error:', error);
             // Don't fail the test if sound system is not available, just log it
             console.warn('Sound system may not be available in test environment');
             assert.ok(true, 'Test completed (sound system may not be available)');
