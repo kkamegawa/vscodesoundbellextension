@@ -37,6 +37,9 @@
     "onStartupFinished"
   ],
   "main": "./out/src/extension.js",
+  "extensionKind": [
+    "ui"
+  ],
   "icon": "icon.png",
   "contributes": {
     "commands": [
