@@ -10,6 +10,7 @@
 ### 変更
 
 - 以前の Marketplace 拡張IDを復元できないため、Local Audio Hostを `KazushiKamegawa.sound-notifier-local-audio-hostex` として再公開できるように変更
+- 以前の表示名も削除済みMarketplace拡張で予約されているため、一意な表示名 `Sound Notifier Local Audio Hostex` を使用
 - メイン拡張の依存先を新しいLocal Audio Host拡張へ更新
 - メイン拡張とLocal Audio Host拡張のバージョンを `1.0.1` に統一
 

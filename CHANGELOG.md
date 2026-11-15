@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Republish the Local Audio Host as `KazushiKamegawa.sound-notifier-local-audio-hostex` because the previous Marketplace extension ID cannot be restored
+- Use the unique display name `Sound Notifier Local Audio Hostex` because the previous display name is also reserved by the removed Marketplace extension
 - Update the main extension to depend on the replacement Local Audio Host extension
 - Align the main and Local Audio Host extension versions at `1.0.1`
 

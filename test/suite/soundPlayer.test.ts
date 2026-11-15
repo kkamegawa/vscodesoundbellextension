@@ -69,12 +69,14 @@ suite('Sound Notifier Extension Test Suite', () => {
         });
     });
 
-    test('Should package the local audio host with the completion icon', () => {
+    test('Should package the local audio host with its replacement identity and completion icon', () => {
         const repositoryRoot = path.resolve(__dirname, '../../..');
         const extensionDirectory = path.join(repositoryRoot, 'local-audio-host');
         const rootManifest = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'));
         const manifest = JSON.parse(fs.readFileSync(path.join(extensionDirectory, 'package.json'), 'utf8'));
 
+        assert.strictEqual(manifest.name, 'sound-notifier-local-audio-hostex');
+        assert.strictEqual(manifest.displayName, 'Sound Notifier Local Audio Hostex');
         assert.strictEqual(rootManifest.icon, 'media/icon/task-complete-icon.png');
         assert.ok(fs.existsSync(path.join(repositoryRoot, rootManifest.icon)), 'The workspace extension icon should exist');
         assert.strictEqual(manifest.icon, 'icon.png');

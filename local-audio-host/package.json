@@ -1,6 +1,6 @@
 {
   "name": "sound-notifier-local-audio-hostex",
-  "displayName": "Sound Notifier Local Audio Host",
+  "displayName": "Sound Notifier Local Audio Hostex",
   "description": "Plays Sound Notifier completion audio on the local VS Code client.",
   "icon": "icon.png",
   "version": "1.0.1",
