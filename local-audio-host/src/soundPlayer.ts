@@ -163,48 +163,11 @@ export class SoundPlayer {
      */
     private async playVSCodeNotification(): Promise<void> {
         const showNotification = this.config.get<boolean>('showNotification', false);
+        const message = showNotification
+            ? '🎵 GitHub Copilot Agent task completed!'
+            : '🎵 Copilot task completed!';
 
-        // Try multiple approaches to trigger a notification sound
-        try {
-            // Method 1: Show and quickly hide error message (has sound on most systems)
-            vscode.window.showErrorMessage('🎵 Copilot task completed!');
-            setTimeout(() => {
-                // Hide the message after a short time
-                vscode.commands.executeCommand('workbench.action.closeMessages');
-            }, 100);
-
-            // Method 2: Try to trigger system beep
-            if (process.platform === 'win32') {
-                try {
-                    await new Promise<void>((resolve, reject) => {
-                        const cp = require('child_process');
-                        cp.exec('powershell -c "[console]::beep(800,200)"', (error: any) => {
-                            if (error) {
-                                // Try another approach
-                                cp.exec('powershell -c "echo `a"', () => resolve());
-                            } else {
-                                resolve();
-                            }
-                        });
-                    });
-                } catch (error) {
-                    console.log('Could not trigger beep sound');
-                }
-            }
-
-        } catch (error) {
-            console.log('Could not trigger notification sound via commands');
-        }
-
-        if (showNotification) {
-            // Show information message
-            vscode.window.showInformationMessage('🎵 GitHub Copilot Agent task completed!');
-        } else {
-            // Show brief status bar notification
-            vscode.window.setStatusBarMessage('$(bell) Copilot task completed', 3000);
-        }
-
-        return Promise.resolve();
+        vscode.window.showInformationMessage(message);
     }
 
     /**
