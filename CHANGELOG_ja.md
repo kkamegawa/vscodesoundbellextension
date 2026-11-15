@@ -5,6 +5,14 @@
 「Sound Notifier for GitHub Copilot」拡張機能の主な変更を記録します。
 変更履歴は Keep a Changelog の形式に準拠し、このプロジェクトは Semantic Versioning に従います。
 
+## [1.0.1] - 2026-11-15
+
+### 変更
+
+- 以前の Marketplace 拡張IDを復元できないため、Local Audio Hostを `KazushiKamegawa.sound-notifier-local-audio-hostex` として再公開できるように変更
+- メイン拡張の依存先を新しいLocal Audio Host拡張へ更新
+- メイン拡張とLocal Audio Host拡張のバージョンを `1.0.1` に統一
+
 ## [0.0.1] - 2025-07-05
 
 ### 追加

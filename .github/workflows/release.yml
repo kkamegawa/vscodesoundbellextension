@@ -138,7 +138,7 @@ jobs:
           ROOT_VSIX="${ROOT_VSIX_FILES[0]}"
           AUDIO_VSIX="${AUDIO_VSIX_FILES[0]}"
           verify_vsix "${ROOT_VSIX}" "KazushiKamegawa.sound-notifier-for-copilot-agent-task"
-          verify_vsix "${AUDIO_VSIX}" "KazushiKamegawa.sound-notifier-audio-client"
+          verify_vsix "${AUDIO_VSIX}" "KazushiKamegawa.sound-notifier-local-audio-hostex"
 
           echo "root_vsix_path=${ROOT_VSIX}" >> "${GITHUB_OUTPUT}"
           echo "audio_vsix_path=${AUDIO_VSIX}" >> "${GITHUB_OUTPUT}"
