@@ -31,8 +31,56 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage(`VS Code notification mode: ${!current ? 'Enabled' : 'Disabled'}`);
     });
 
+    const installAgentStopHookCommand = vscode.commands.registerCommand('soundNotifier.installAgentStopHook', async () => {
+        const hooksDirectory = copilotMonitor.getUserHooksDirectory();
+        const choice = await vscode.window.showWarningMessage(
+            'Install a user-level Copilot agent completion hook?',
+            { modal: true, detail: `Agent hooks are in preview. This writes extension-managed files to ${hooksDirectory}. Start a new Copilot session after installation.` },
+            'Install Hook'
+        );
+
+        if (choice !== 'Install Hook') {
+            return;
+        }
+
+        try {
+            const installedAt = copilotMonitor.installAgentStopHook();
+            vscode.window.showInformationMessage(`Copilot completion hook installed in ${installedAt}. Start a new Copilot session to load it.`);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`Could not install the Copilot completion hook: ${message}`);
+        }
+    });
+
+    const uninstallAgentStopHookCommand = vscode.commands.registerCommand('soundNotifier.uninstallAgentStopHook', async () => {
+        const hooksDirectory = copilotMonitor.getUserHooksDirectory();
+        const choice = await vscode.window.showWarningMessage(
+            'Remove the extension-managed Copilot agent completion hook?',
+            { modal: true, detail: `The extension will remove only its managed hook files from ${hooksDirectory}.` },
+            'Uninstall Hook'
+        );
+
+        if (choice !== 'Uninstall Hook') {
+            return;
+        }
+
+        try {
+            const removedFrom = copilotMonitor.uninstallAgentStopHook();
+            vscode.window.showInformationMessage(`Copilot completion hook removed from ${removedFrom}.`);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`Could not remove the Copilot completion hook: ${message}`);
+        }
+    });
+
     // Add to subscriptions
-    context.subscriptions.push(playCommand, testCommand, toggleVSCodeNotificationCommand);
+    context.subscriptions.push(
+        playCommand,
+        testCommand,
+        toggleVSCodeNotificationCommand,
+        installAgentStopHookCommand,
+        uninstallAgentStopHookCommand
+    );
     
     // Start monitoring
     copilotMonitor.start(context);

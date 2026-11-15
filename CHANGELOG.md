@@ -1,5 +1,7 @@
 # Changelog
 
+[日本語](CHANGELOG_ja.md)
+
 All notable changes to the "Sound Notifier for GitHub Copilot" extension will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -56,6 +58,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VS Code Extension API 1.74.0+
 
 ## [Unreleased]
+
+### Added
+
+- Opt-in commands to install or uninstall a user-level Copilot `agentStop` hook for completion sounds
+- Documentation for hook setup, runtime requirements, and the preview status of Copilot hooks
+
+### Changed
+
+- Completion sounds are now triggered when Copilot finishes a turn through `agentStop`, rather than on terminal focus, Copilot configuration changes, or large document insertions
+- Hook installation is explicit and applies to new Copilot sessions; Node.js 24 or later must be available on the agent runtime host
 
 ### Planned Features
 
