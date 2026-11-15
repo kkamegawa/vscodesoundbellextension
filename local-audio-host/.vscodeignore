@@ -1,0 +1,12 @@
+src/**
+test/**
+tsconfig.json
+.vscodeignore
+.gitignore
+node_modules/**
+.vscode-test/**
+*.ts
+*.map
+*.vsix
+coverage/**
+.nyc_output/**

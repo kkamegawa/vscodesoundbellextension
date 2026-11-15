@@ -1,7 +1,11 @@
 import * as assert from 'assert';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
-import { SoundPlayer } from '../../src/soundPlayer';
-import { EXTENSION_ID } from './testConstants';
+import { LocalAudioClient } from '../../src/localAudioClient';
+import { EXTENSION_ID, LOCAL_AUDIO_EXTENSION_ID } from './testConstants';
+import { LOCAL_AUDIO_PLAY_COMMAND, LOCAL_AUDIO_TEST_COMMAND } from '../../src/localAudioClient';
+import { getTrustedPlatformSettingValues } from '../../local-audio-host/src/trustedSettings';
 
 suite('Sound Notifier Extension Test Suite', () => {
     suiteSetup(async () => {
@@ -9,6 +13,11 @@ suite('Sound Notifier Extension Test Suite', () => {
         const extension = vscode.extensions.getExtension(EXTENSION_ID);
         if (extension && !extension.isActive) {
             await extension.activate();
+        }
+        const localAudioExtension = vscode.extensions.getExtension(LOCAL_AUDIO_EXTENSION_ID);
+        assert.ok(localAudioExtension, 'Local audio companion should be found');
+        if (localAudioExtension && !localAudioExtension.isActive) {
+            await localAudioExtension.activate();
         }
         // Give extension time to fully initialize
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -24,9 +33,95 @@ suite('Sound Notifier Extension Test Suite', () => {
         const commands = await vscode.commands.getCommands();
         const hasTestSound = commands.includes('soundNotifier.testSound');
         const hasPlaySound = commands.includes('soundNotifier.playSound');
+        const hasLocalTestSound = commands.includes(LOCAL_AUDIO_TEST_COMMAND);
+        const hasLocalPlaySound = commands.includes(LOCAL_AUDIO_PLAY_COMMAND);
         
         assert.ok(hasTestSound, 'soundNotifier.testSound command should be registered');
         assert.ok(hasPlaySound, 'soundNotifier.playSound command should be registered');
+        assert.ok(hasLocalTestSound, 'The UI companion test-sound command should be registered');
+        assert.ok(hasLocalPlaySound, 'The UI companion playback command should be registered');
+    });
+
+    test('Should ignore workspace overrides for local sound paths and commands', () => {
+        const commandValues = {
+            defaultValue: { linux: '' },
+            globalValue: { linux: 'paplay trusted.wav' },
+            workspaceValue: { linux: 'malicious-workspace-command' },
+            workspaceFolderValue: { linux: 'malicious-folder-command' }
+        };
+
+        assert.deepStrictEqual(getTrustedPlatformSettingValues(commandValues), {
+            linux: 'paplay trusted.wav'
+        });
+        assert.deepStrictEqual(getTrustedPlatformSettingValues({
+            defaultValue: { linux: '' },
+            globalValue: { linux: '/user/sounds/complete.wav' },
+            workspaceValue: { linux: '/workspace/$(malicious-command).wav' },
+            workspaceFolderValue: { linux: '/folder/$(malicious-command).wav' }
+        }), {
+            linux: '/user/sounds/complete.wav'
+        });
+        assert.deepStrictEqual(getTrustedPlatformSettingValues({
+            defaultValue: { linux: 'paplay default.wav' },
+            workspaceValue: { linux: 'malicious-workspace-command' }
+        }), {
+            linux: 'paplay default.wav'
+        });
+    });
+
+    test('Should limit local sound paths and commands to machine settings', () => {
+        const manifestPath = path.resolve(__dirname, '../../../local-audio-host/package.json');
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        const configurations = manifest.contributes.configuration;
+        const properties = Array.isArray(configurations)
+            ? Object.assign({}, ...configurations.map((configuration: { properties?: Record<string, unknown> }) => configuration.properties ?? {}))
+            : configurations.properties;
+
+        for (const key of [
+            'soundNotifier.soundFiles',
+            'soundNotifier.soundCommands',
+            'soundNotifier.defaultSoundCommands'
+        ]) {
+            assert.strictEqual(properties[key].scope, 'machine', `${key} should not accept workspace overrides`);
+        }
+    });
+
+    test('Should report bundled playback while completion notifications are enabled', async function() {
+        this.timeout(10000);
+
+        const config = vscode.workspace.getConfiguration('soundNotifier');
+        const keys = [
+            'enabled',
+            'soundFiles',
+            'soundCommands',
+            'useBundledSound',
+            'useDefaultSystemSound',
+            'useVSCodeNotification'
+        ];
+        const originalValues = new Map<string, unknown>();
+
+        for (const key of keys) {
+            originalValues.set(key, config.inspect<unknown>(key)?.globalValue);
+        }
+
+        try {
+            await config.update('enabled', true, vscode.ConfigurationTarget.Global);
+            await config.update('soundFiles', {}, vscode.ConfigurationTarget.Global);
+            await config.update('soundCommands', {}, vscode.ConfigurationTarget.Global);
+            await config.update('useBundledSound', true, vscode.ConfigurationTarget.Global);
+            await config.update('useDefaultSystemSound', false, vscode.ConfigurationTarget.Global);
+            await config.update('useVSCodeNotification', true, vscode.ConfigurationTarget.Global);
+
+            const source = await vscode.commands.executeCommand<string>(LOCAL_AUDIO_TEST_COMMAND);
+            assert.ok(
+                source === 'bundled' || source === 'skipped',
+                `Expected the bundled sound or a test-environment skip, but received: ${source}`
+            );
+        } finally {
+            for (const key of keys) {
+                await config.update(key, originalValues.get(key), vscode.ConfigurationTarget.Global);
+            }
+        }
     });
 
     test('Should execute testSound command without errors', async function() {
@@ -73,10 +168,12 @@ suite('Sound Notifier Extension Test Suite', () => {
         // Test getting configuration values
         const enabled = config.get<boolean>('enabled');
         const useVSCodeNotification = config.get<boolean>('useVSCodeNotification');
+        const useBundledSound = config.get<boolean>('useBundledSound');
         const volume = config.get<number>('volume');
         
         assert.ok(typeof enabled === 'boolean', 'enabled should be a boolean');
         assert.ok(typeof useVSCodeNotification === 'boolean', 'useVSCodeNotification should be a boolean');
+        assert.strictEqual(useBundledSound, true, 'useBundledSound should be enabled by default');
         assert.ok(typeof volume === 'number', 'volume should be a number');
         assert.ok(volume >= 0 && volume <= 1, 'volume should be between 0 and 1');
     });
@@ -110,6 +207,7 @@ suite('Sound Notifier Extension Test Suite', () => {
             'soundFiles',
             'soundCommands',
             'useVSCodeNotification',
+            'useBundledSound',
             'useDefaultSystemSound',
             'defaultSoundCommands',
             'volume',
@@ -122,23 +220,40 @@ suite('Sound Notifier Extension Test Suite', () => {
         });
     });
 
-    test('Should create SoundPlayer instance', () => {
-        const soundPlayer = new SoundPlayer();
-        assert.ok(soundPlayer, 'SoundPlayer instance should be created');
+    test('Should include the bundled Copilot completion sound', () => {
+        const audioExtension = vscode.extensions.getExtension(LOCAL_AUDIO_EXTENSION_ID);
+        const extension = vscode.extensions.getExtension(EXTENSION_ID);
+        assert.ok(audioExtension, 'Local audio companion should be installed');
+        assert.ok(extension, 'Main extension should be installed');
+
+        const soundFile = path.join(audioExtension.extensionPath, 'media', 'sound', 'task_complete1.wav');
+        const sourceSoundFile = path.join(extension.extensionPath, 'media', 'sound', 'task_complete1.wav');
+        assert.ok(fs.existsSync(soundFile), 'Bundled completion sound should exist in the local audio extension');
+        assert.ok(fs.existsSync(sourceSoundFile), 'Original completion sound should exist in the source extension');
+        assert.deepStrictEqual(
+            fs.readFileSync(soundFile),
+            fs.readFileSync(sourceSoundFile),
+            'The local audio companion should bundle the original sound without changing its audio data'
+        );
+    });
+
+    test('Should create LocalAudioClient instance', () => {
+        const localAudioClient = new LocalAudioClient();
+        assert.ok(localAudioClient, 'LocalAudioClient instance should be created');
     });
 
     test('Should execute SoundPlayer testSound method', async function() {
         this.timeout(10000);
         
-        const soundPlayer = new SoundPlayer();
-        console.log('Testing SoundPlayer.testSound() method...');
+        const localAudioClient = new LocalAudioClient();
+        console.log('Testing LocalAudioClient.testSound() method...');
         
         try {
-            await soundPlayer.testSound();
-            console.log('SoundPlayer.testSound() completed successfully');
-            assert.ok(true, 'SoundPlayer testSound method executed successfully');
+            await localAudioClient.testSound();
+            console.log('LocalAudioClient.testSound() completed successfully');
+            assert.ok(true, 'LocalAudioClient testSound method executed successfully');
         } catch (error) {
-            console.error('SoundPlayer testSound error:', error);
+            console.error('LocalAudioClient testSound error:', error);
             // Don't fail the test if sound system is not available, just log it
             console.warn('Sound system may not be available in test environment');
             assert.ok(true, 'Test completed (sound system may not be available)');
@@ -148,15 +263,15 @@ suite('Sound Notifier Extension Test Suite', () => {
     test('Should execute SoundPlayer playCompletionSound method', async function() {
         this.timeout(10000);
         
-        const soundPlayer = new SoundPlayer();
-        console.log('Testing SoundPlayer.playCompletionSound() method...');
+        const localAudioClient = new LocalAudioClient();
+        console.log('Testing LocalAudioClient.playCompletionSound() method...');
         
         try {
-            await soundPlayer.playCompletionSound();
-            console.log('SoundPlayer.playCompletionSound() completed successfully');
-            assert.ok(true, 'SoundPlayer playCompletionSound method executed successfully');
+            await localAudioClient.playCompletionSound();
+            console.log('LocalAudioClient.playCompletionSound() completed successfully');
+            assert.ok(true, 'LocalAudioClient playCompletionSound method executed successfully');
         } catch (error) {
-            console.error('SoundPlayer playCompletionSound error:', error);
+            console.error('LocalAudioClient playCompletionSound error:', error);
             // Don't fail the test if sound system is not available, just log it
             console.warn('Sound system may not be available in test environment');
             assert.ok(true, 'Test completed (sound system may not be available)');

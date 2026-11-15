@@ -36,12 +36,24 @@ jobs:
           *) echo "Release tag must start with lowercase v."; exit 1 ;;
         esac
         npm version "$VERSION" --no-git-tag-version --allow-same-version --ignore-scripts
-        PACKAGE_VERSION="$(node -p "require('./package.json').version")"
-        LOCK_VERSION="$(node -p "require('./package-lock.json').version")"
-        if [ "$PACKAGE_VERSION" != "$VERSION" ] || [ "$LOCK_VERSION" != "$VERSION" ]; then
-          echo "Release tag version does not match package.json and package-lock.json."
-          exit 1
-        fi
+        EXPECTED_VERSION="$VERSION" node <<'NODE'
+        const fs = require('node:fs');
+
+        const expected = process.env.EXPECTED_VERSION;
+        const packageVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+        const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+        const lockVersion = lock.version;
+        const lockRootVersion = lock.packages?.['']?.version;
+        const companionPath = 'local-audio-host/package.json';
+        const companion = JSON.parse(fs.readFileSync(companionPath, 'utf8'));
+        companion.version = expected;
+        fs.writeFileSync(companionPath, `${JSON.stringify(companion, null, 2)}\n`);
+
+        if (packageVersion !== expected || lockVersion !== expected || lockRootVersion !== expected || companion.version !== expected) {
+          console.error(`Release tag version does not match package.json, package-lock.json, and local-audio-host/package.json: expected ${expected}, found ${packageVersion}, ${lockVersion} (lock root ${lockRootVersion}), and ${companion.version}.`);
+          process.exit(1);
+        }
+        NODE
     - name: Compile TypeScript
       run: npm run compile
       
@@ -53,17 +65,36 @@ jobs:
       
     - name: Get VSIX filename
       run: |
-        VSIX_FILE=$(ls *.vsix | head -1)
-        echo "VSIX_FILE=$VSIX_FILE" >> $GITHUB_ENV
-        echo "Publishing $VSIX_FILE"
+        ROOT_VSIX=$(find . -maxdepth 1 -type f -name '*.vsix' -print -quit)
+        AUDIO_VSIX=$(find local-audio-host -maxdepth 1 -type f -name '*.vsix' -print -quit)
+        if [ -z "$ROOT_VSIX" ] || [ -z "$AUDIO_VSIX" ]; then
+          echo "Both root and local audio VSIX packages must be present."
+          exit 1
+        fi
+        echo "ROOT_VSIX=$ROOT_VSIX" >> "$GITHUB_ENV"
+        echo "AUDIO_VSIX=$AUDIO_VSIX" >> "$GITHUB_ENV"
+        echo "Publishing $AUDIO_VSIX before $ROOT_VSIX"
       
-    - name: Publish to VS Code Marketplace
-      run: npx vsce publish --no-yarn
+    - name: Publish local audio host to VS Code Marketplace
+      run: npx vsce publish --no-yarn --packagePath "$AUDIO_VSIX"
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+    - name: Publish main extension to VS Code Marketplace
+      run: npx vsce publish --no-yarn --packagePath "$ROOT_VSIX"
       env:
         VSCE_PAT: ${{ secrets.VSCE_PAT }}
         
-    - name: Publish to Open VSX Registry
-      run: npx ovsx publish "$VSIX_FILE"
+    - name: Publish local audio host to Open VSX Registry
+      id: publish_audio_openvsx
+      run: npx ovsx publish "$AUDIO_VSIX"
+      env:
+        OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      continue-on-error: true
+
+    - name: Publish main extension to Open VSX Registry
+      if: steps.publish_audio_openvsx.outcome == 'success'
+      run: npx ovsx publish "$ROOT_VSIX"
       env:
         OVSX_PAT: ${{ secrets.OVSX_PAT }}
       continue-on-error: true

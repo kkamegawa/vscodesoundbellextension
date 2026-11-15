@@ -69,10 +69,16 @@ jobs:
 
           const expected = process.env.EXPECTED_VERSION;
           const packageVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
-          const lockVersion = JSON.parse(fs.readFileSync('package-lock.json', 'utf8')).version;
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const lockVersion = lock.version;
+          const lockRootVersion = lock.packages?.['']?.version;
+          const companionPath = 'local-audio-host/package.json';
+          const companion = JSON.parse(fs.readFileSync(companionPath, 'utf8'));
+          companion.version = expected;
+          fs.writeFileSync(companionPath, `${JSON.stringify(companion, null, 2)}\n`);
 
-          if (packageVersion !== expected || lockVersion !== expected) {
-            console.error(`Expected package.json and package-lock.json to match ${expected}; found ${packageVersion} and ${lockVersion}.`);
+          if (packageVersion !== expected || lockVersion !== expected || lockRootVersion !== expected || companion.version !== expected) {
+            console.error(`Expected package.json, package-lock.json, and local-audio-host/package.json to match ${expected}; found ${packageVersion}, ${lockVersion} (lock root ${lockRootVersion}), and ${companion.version}.`);
             process.exit(1);
           }
           NODE
@@ -102,20 +108,40 @@ jobs:
         env:
           EXPECTED_VERSION: ${{ steps.version.outputs.version }}
         run: |
-          VSIX_PATH="$(find . -maxdepth 1 -name '*.vsix' -print -quit)"
-          if [[ -z "${VSIX_PATH}" ]]; then
-            echo "VSIX file was not generated."
+          shopt -s nullglob
+          ROOT_VSIX_FILES=( ./*.vsix )
+          AUDIO_VSIX_FILES=( local-audio-host/*.vsix )
+          if [[ "${#ROOT_VSIX_FILES[@]}" -ne 1 || "${#AUDIO_VSIX_FILES[@]}" -ne 1 ]]; then
+            echo "Expected exactly one VSIX for each extension; found ${#ROOT_VSIX_FILES[@]} root and ${#AUDIO_VSIX_FILES[@]} audio-client packages."
             exit 1
           fi
 
-          VSIX_VERSION="$(unzip -p "${VSIX_PATH}" extension/package.json | node -e 'let data = ""; process.stdin.on("data", chunk => data += chunk); process.stdin.on("end", () => console.log(JSON.parse(data).version));')"
-          if [[ "${VSIX_VERSION}" != "${EXPECTED_VERSION}" ]]; then
-            echo "VSIX manifest version (${VSIX_VERSION}) does not match tag version (${EXPECTED_VERSION})."
-            exit 1
-          fi
+          verify_vsix() {
+            local vsix_path="$1"
+            local expected_id="$2"
+            unzip -p "${vsix_path}" extension/package.json | EXPECTED_ID="${expected_id}" EXPECTED_VERSION="${EXPECTED_VERSION}" node -e '
+              let data = "";
+              process.stdin.on("data", chunk => data += chunk);
+              process.stdin.on("end", () => {
+                const manifest = JSON.parse(data);
+                const id = `${manifest.publisher}.${manifest.name}`.toLowerCase();
+                const expectedId = process.env.EXPECTED_ID.toLowerCase();
+                if (id !== expectedId || manifest.version !== process.env.EXPECTED_VERSION) {
+                  console.error(`${id}@${manifest.version} does not match ${expectedId}@${process.env.EXPECTED_VERSION}.`);
+                  process.exit(1);
+                }
+                console.log(`Verified ${id}@${manifest.version}.`);
+              });
+            '
+          }
 
-          echo "VSIX manifest version is ${VSIX_VERSION}."
-          echo "vsix_path=${VSIX_PATH}" >> "${GITHUB_OUTPUT}"
+          ROOT_VSIX="${ROOT_VSIX_FILES[0]}"
+          AUDIO_VSIX="${AUDIO_VSIX_FILES[0]}"
+          verify_vsix "${ROOT_VSIX}" "KazushiKamegawa.sound-notifier-for-copilot-agent-task"
+          verify_vsix "${AUDIO_VSIX}" "KazushiKamegawa.sound-notifier-audio-client"
+
+          echo "root_vsix_path=${ROOT_VSIX}" >> "${GITHUB_OUTPUT}"
+          echo "audio_vsix_path=${AUDIO_VSIX}" >> "${GITHUB_OUTPUT}"
 
       - name: Create draft GitHub Release
         uses: softprops/action-gh-release@v3
@@ -124,6 +150,8 @@ jobs:
           name: ${{ github.ref_name }}
           draft: true
           generate_release_notes: true
-          files: ${{ steps.package.outputs.vsix_path }}
+          files: |
+            ${{ steps.package.outputs.root_vsix_path }}
+            ${{ steps.package.outputs.audio_vsix_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

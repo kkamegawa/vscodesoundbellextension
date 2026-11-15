@@ -4,14 +4,14 @@
 
 GitHub Copilot エージェントがターンを終え、操作をユーザーに戻したときにサウンドを再生する VS Code 拡張機能です。エディターを見続けなくても作業の完了に気付けます。
 
-完了の検出には Copilot の `agentStop` フックを使います。フック機能は現在プレビュー中のため、サウンド通知はオプトイン方式です。利用するにはユーザーレベルのフックをインストールしてください。
+完了の検出には Copilot の `agentStop` フックを使います。フック機能は現在プレビュー中のため、サウンド通知はオプトイン方式です。利用するにはユーザーレベルのフックをインストールしてください。Remote SSHでは、workspace extensionがCopilot実行ホスト上のhookを監視し、ローカルUI companionがクライアント側で音を再生します。
 
 ## 主な機能
 
 - macOS、Windows、Linux に対応
 - サウンドファイルと OS ごとの再生コマンドを設定可能
-- カスタムサウンドが未設定の場合はシステムサウンドを使用
-- VS Code の通知再生モードに対応
+- Copilot完了音を同梱し、再生できない場合はシステムサウンドを使用
+- 音声再生とあわせて VS Code の通知を表示可能
 - Copilot の完了フックを明示的にインストール・削除
 
 ## 完了フックをインストールする
@@ -20,13 +20,15 @@ GitHub Copilot エージェントがターンを終え、操作をユーザー�
 2. **Sound Notifier: Install Copilot Agent Completion Hook** を実行します。
 3. フック設定を読み込ませるため、新しい Copilot セッションを開始します。
 
-フックは Copilot エージェントの実行環境で動作します。その環境に Node.js 24 以降をインストールし、`PATH` から `node` を実行できるようにしてください。リモートまたはコンテナーのセッションでは、そのリモート環境またはコンテナーに Node.js をインストールします。
+フックは Copilot エージェントの実行環境で動作します。その環境に Node.js 24 以降をインストールし、`PATH` から `node` を実行できるようにしてください。リモートまたはコンテナーのセッションでは、そのリモート環境またはコンテナーに Node.js をインストールします。Remote SSHでは、Copilotが実行されるホストにフックを置くため、SSH接続中のウィンドウでインストールコマンドを実行してください。ローカル音声companionは依存拡張として自動インストールされます。VSIXを手動で入れる場合は、両方のパッケージをインストールしてください。
 
 フックを削除するには、コマンドパレットから **Sound Notifier: Uninstall Copilot Agent Completion Hook** を実行します。拡張機能が管理するフックファイルだけを削除します。
 
 ## 設定
 
 VS Code の設定から拡張機能を構成します。
+
+ローカル再生で使う音声ファイルとカスタムコマンドは machine scope の設定です。User 設定に指定してください。再生はローカルの UI extension host で行うため、Workspace と Folder の値は使用しません。
 
 ```json
 {
@@ -41,11 +43,13 @@ VS Code の設定から拡張機能を構成します。
     "darwin": "afplay \"{file}\"",
     "linux": "paplay \"{file}\""
   },
+  "soundNotifier.useBundledSound": true,
+  "soundNotifier.useVSCodeNotification": true,
   "soundNotifier.volume": 0.5
 }
 ```
 
-サウンドファイルを空欄にするとシステムサウンドを使います。利用できる形式は再生コマンドと OS によって異なります。拡張機能のファイル検証では WAV、MP4、WMA、WebM に対応しています。
+カスタム音声が設定されていない場合、既定では同梱のCopilot完了音を再生します。`soundNotifier.soundFiles`に指定した音声は同梱音より優先されます。`soundNotifier.useBundledSound`を`false`にするとシステムサウンドを使用します。`soundNotifier.useVSCodeNotification`は音声再生とあわせてVS Codeの通知を表示します。カスタム音声の対応形式は再生コマンドとOSによって異なります。
 
 ## コマンド
 
@@ -53,7 +57,7 @@ VS Code の設定から拡張機能を構成します。
 - **Sound Notifier: Uninstall Copilot Agent Completion Hook** — 拡張機能が管理するユーザーフックを削除します
 - **Sound Notifier: Play Completion Sound** — 設定したサウンドを手動で再生します
 - **Sound Notifier: Test Sound** — 現在のサウンド設定をテストします
-- **Sound Notifier: Toggle VS Code Notification Mode** — VS Code の通知再生モードを切り替えます
+- **Sound Notifier: Toggle VS Code Completion Notification** — 音声再生とあわせて表示する VS Code 通知を切り替えます
 
 ## 開発
 
@@ -66,6 +70,10 @@ VS Code の設定から拡張機能を構成します。
 ## セキュリティ
 
 この拡張機能は GitHub Advanced Security CodeQL、Dependabot、`npm audit` で定期的に脆弱性を確認しています。セキュリティに関する連絡先は [Security Policy](SECURITY.md) を参照してください。
+
+## 同梱音源の帰属表示
+
+同梱の完了音（`media/sound/task_complete1.wav`）は、プロジェクトメンテナーが Adobe Firefly を使用して生成し、下記の MIT ライセンスのもとで拡張機能と一緒に再配布しています。Adobe の [Firefly FAQ](https://helpx.adobe.com/jp/firefly/web/get-started/learn-the-basics/adobe-firefly-faq.html) では、ベータ機能の出力も製品内で別途制限されていない限り、商用プロジェクトで使用できると説明されています。利用した機能に適用される Adobe の規約と、プロンプトや入力素材に関する権利には従ってください。この帰属表示は Adobe による推奨・承認を意味しません。
 
 ## ライセンス
 
