@@ -147,7 +147,7 @@ export class SoundPlayer {
         // Try multiple approaches to trigger a notification sound
         try {
             // Method 1: Show and quickly hide error message (has sound on most systems)
-            const message = vscode.window.showErrorMessage('🎵 Copilot task completed!');
+            vscode.window.showErrorMessage('🎵 Copilot task completed!');
             setTimeout(() => {
                 // Hide the message after a short time
                 vscode.commands.executeCommand('workbench.action.closeMessages');
