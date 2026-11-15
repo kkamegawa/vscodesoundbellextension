@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { SoundPlayer } from './soundPlayer';
 
 export function activate(context: vscode.ExtensionContext): void {
-    const soundPlayer = new SoundPlayer();
+    const soundPlayer = new SoundPlayer(context.extensionUri.fsPath);
     const playCompletionSound = vscode.commands.registerCommand(
         'soundNotifierAudio.playCompletionSound',
         () => soundPlayer.playCompletionSound()

@@ -16,6 +16,7 @@ eslint.config.js
 webpack.config.js
 .vscode/**
 local-audio-host/**
+media/**
 scripts/**
 !scripts/copilot-agent-stop.cjs
 

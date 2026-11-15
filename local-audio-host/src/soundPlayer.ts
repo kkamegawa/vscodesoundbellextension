@@ -5,9 +5,11 @@ import * as fs from 'fs';
 
 export class SoundPlayer {
     private config: vscode.WorkspaceConfiguration;
+    private readonly extensionPath: string;
 
-    constructor() {
-    this.config = vscode.workspace.getConfiguration('soundNotifier');
+    constructor(extensionPath: string) {
+        this.config = vscode.workspace.getConfiguration('soundNotifier');
+        this.extensionPath = extensionPath;
     }
 
     /**
@@ -74,14 +76,17 @@ export class SoundPlayer {
         const soundFiles = this.config.get<any>('soundFiles', {});
         const soundCommands = this.config.get<any>('soundCommands', {});
         const useVSCodeNotification = this.config.get<boolean>('useVSCodeNotification', true);
+        const useBundledSound = this.config.get<boolean>('useBundledSound', true);
         const useDefaultSystemSound = this.config.get<boolean>('useDefaultSystemSound', true);
 
         const customSoundFile = soundFiles[platform];
         const customCommand = soundCommands[platform];
+        const bundledSoundFile = path.join(this.extensionPath, 'media', 'sound', 'task_complete1.wav');
 
         console.log('Sound configuration:', {
             platform,
             useVSCodeNotification,
+            useBundledSound,
             useDefaultSystemSound,
             customSoundFile,
             customCommand
@@ -110,6 +115,22 @@ export class SoundPlayer {
             } catch (error) {
                 console.error('Failed to play custom sound:', error);
                 // Fall through to system sound
+            }
+        }
+
+        // Use the bundled Copilot completion tone when no custom file is configured.
+        if (useBundledSound) {
+            console.log('Attempting to play the bundled Copilot completion sound:', bundledSoundFile);
+            try {
+                if (customCommand) {
+                    await this.executeCustomCommand(customCommand, bundledSoundFile);
+                } else {
+                    await this.playCustomSoundFile(bundledSoundFile);
+                }
+                return;
+            } catch (error) {
+                console.error('Failed to play bundled Copilot completion sound:', error);
+                // Fall through to the system sound.
             }
         }
 
@@ -230,8 +251,8 @@ export class SoundPlayer {
         const defaultCommands = this.config.get<any>('defaultSoundCommands', {});
         let command: string;
 
-        // Try to use configured default command first
-        if (defaultCommands[platform]) {
+        // Use a configured command only when it explicitly accepts a file path.
+        if (typeof defaultCommands[platform] === 'string' && defaultCommands[platform].includes('{file}')) {
             command = defaultCommands[platform].replace('{file}', `"${soundFile}"`);
         } else {
             // Fallback to hardcoded defaults

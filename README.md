@@ -10,7 +10,7 @@ Completion detection uses Copilot's `agentStop` hook. The hook feature is curren
 
 - Cross-platform support for macOS, Windows, and Linux
 - Custom sound files and platform-specific playback commands
-- System sound fallback when no custom sound file is configured
+- Bundled Copilot completion sound, with system sound fallback
 - Optional VS Code notification alongside sound playback
 - Explicit installation and removal of the Copilot completion hook
 
@@ -41,12 +41,13 @@ Configure the extension through VS Code settings:
     "darwin": "afplay \"{file}\"",
     "linux": "paplay \"{file}\""
   },
+  "soundNotifier.useBundledSound": true,
   "soundNotifier.useVSCodeNotification": true,
   "soundNotifier.volume": 0.5
 }
 ```
 
-`soundNotifier.useVSCodeNotification` shows a VS Code notification in addition to the sound. It does not replace audio playback. Leave a platform's sound file empty to use a system sound. The available audio formats depend on the playback command and operating system; WAV, MP4, WMA, and WebM are supported by the extension's file validation.
+The bundled Copilot completion sound is used by default when no custom sound file is configured. A custom file in `soundNotifier.soundFiles` overrides it; set `soundNotifier.useBundledSound` to `false` to use the system sound instead. `soundNotifier.useVSCodeNotification` shows a VS Code notification alongside audio playback. Supported custom audio formats depend on the playback command and operating system.
 
 ## Commands
 

@@ -10,7 +10,7 @@ GitHub Copilot エージェントがターンを終え、操作をユーザー�
 
 - macOS、Windows、Linux に対応
 - サウンドファイルと OS ごとの再生コマンドを設定可能
-- カスタムサウンドが未設定の場合はシステムサウンドを使用
+- Copilot完了音を同梱し、再生できない場合はシステムサウンドを使用
 - 音声再生とあわせて VS Code の通知を表示可能
 - Copilot の完了フックを明示的にインストール・削除
 
@@ -41,12 +41,13 @@ VS Code の設定から拡張機能を構成します。
     "darwin": "afplay \"{file}\"",
     "linux": "paplay \"{file}\""
   },
+  "soundNotifier.useBundledSound": true,
   "soundNotifier.useVSCodeNotification": true,
   "soundNotifier.volume": 0.5
 }
 ```
 
-`soundNotifier.useVSCodeNotification`は、音声再生に加えてVS Codeの通知を表示します。音声再生の代わりにはなりません。サウンドファイルを空欄にするとシステムサウンドを使います。利用できる形式は再生コマンドと OS によって異なります。拡張機能のファイル検証では WAV、MP4、WMA、WebM に対応しています。
+カスタム音声が設定されていない場合、既定では同梱のCopilot完了音を再生します。`soundNotifier.soundFiles`に指定した音声は同梱音より優先されます。`soundNotifier.useBundledSound`を`false`にするとシステムサウンドを使用します。`soundNotifier.useVSCodeNotification`は音声再生とあわせてVS Codeの通知を表示します。カスタム音声の対応形式は再生コマンドとOSによって異なります。
 
 ## コマンド
 

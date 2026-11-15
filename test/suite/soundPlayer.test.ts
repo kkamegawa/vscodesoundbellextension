@@ -1,4 +1,6 @@
 import * as assert from 'assert';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { LocalAudioClient } from '../../src/localAudioClient';
 import { EXTENSION_ID, LOCAL_AUDIO_EXTENSION_ID } from './testConstants';
@@ -83,10 +85,12 @@ suite('Sound Notifier Extension Test Suite', () => {
         // Test getting configuration values
         const enabled = config.get<boolean>('enabled');
         const useVSCodeNotification = config.get<boolean>('useVSCodeNotification');
+        const useBundledSound = config.get<boolean>('useBundledSound');
         const volume = config.get<number>('volume');
         
         assert.ok(typeof enabled === 'boolean', 'enabled should be a boolean');
         assert.ok(typeof useVSCodeNotification === 'boolean', 'useVSCodeNotification should be a boolean');
+        assert.strictEqual(useBundledSound, true, 'useBundledSound should be enabled by default');
         assert.ok(typeof volume === 'number', 'volume should be a number');
         assert.ok(volume >= 0 && volume <= 1, 'volume should be between 0 and 1');
     });
@@ -120,6 +124,7 @@ suite('Sound Notifier Extension Test Suite', () => {
             'soundFiles',
             'soundCommands',
             'useVSCodeNotification',
+            'useBundledSound',
             'useDefaultSystemSound',
             'defaultSoundCommands',
             'volume',
@@ -130,6 +135,14 @@ suite('Sound Notifier Extension Test Suite', () => {
             const hasProperty = config.has(prop);
             assert.ok(hasProperty, `Configuration should have ${prop} property`);
         });
+    });
+
+    test('Should include the bundled Copilot completion sound', () => {
+        const audioExtension = vscode.extensions.getExtension(LOCAL_AUDIO_EXTENSION_ID);
+        assert.ok(audioExtension, 'Local audio companion should be installed');
+
+        const soundFile = path.join(audioExtension.extensionPath, 'media', 'sound', 'task_complete1.wav');
+        assert.ok(fs.existsSync(soundFile), 'Bundled completion sound should exist in the local audio extension');
     });
 
     test('Should create LocalAudioClient instance', () => {

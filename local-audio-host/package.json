@@ -109,6 +109,11 @@
           "default": false,
           "description": "Show a VS Code notification in addition to playing the local sound"
         },
+        "soundNotifier.useBundledSound": {
+          "type": "boolean",
+          "default": true,
+          "description": "Play the bundled Copilot completion sound when no custom sound file is configured"
+        },
         "soundNotifier.useDefaultSystemSound": {
           "type": "boolean",
           "default": true,
